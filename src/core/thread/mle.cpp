@@ -58,9 +58,6 @@
 #include "thread/mle_router.hpp"
 #include "thread/thread_netif.hpp"
 #include "thread/time_sync_service.hpp"
-#include <iostream>
-#include <fstream>
-using namespace std;
 
 using ot::Encoding::BigEndian::HostSwap16;
 
@@ -2662,6 +2659,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
+    FILE*    myfile=fopen("data.txt","w+");
 
     IgnoreError(aMessage.Read(0, header));
 
@@ -2690,15 +2688,29 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+            fwrite(buf,length,64,myfile);
             aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);
         }
 
+
+
         aesCcm.Finalize(tag);
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
 
         Get<KeyManager>().IncrementMleFrameCounter();
+    } else {
+
+        while (aMessage.GetOffset() < aMessage.GetLength())
+        {
+            length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+            fwrite(buf,length,64,myfile);
+            aMessage.MoveOffset(length);
+        }
+
+        fclose(myfile);
+
     }
 
     messageInfo.SetPeerAddr(aDestination);
@@ -2706,15 +2718,11 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     messageInfo.SetPeerPort(kUdpPort);
     messageInfo.SetHopLimit(kMleHopLimit);
 
-    ofstream myfile;
-    myfile.open ("example.txt");
-    myfile << std::format("{} \n \n {}", aMessage, messageInfo);
-    myfile.close();
 
     SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
 
-exit:
-    return error;
+exit: {return error;}
+
 }
 
 Error Mle::AddDelayedResponse(Message &aMessage, const Ip6::Address &aDestination, uint16_t aDelay)
