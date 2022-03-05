@@ -58,6 +58,9 @@
 #include "thread/mle_router.hpp"
 #include "thread/thread_netif.hpp"
 #include "thread/time_sync_service.hpp"
+#include <iostream>
+#include <fstream>
+using namespace std;
 
 using ot::Encoding::BigEndian::HostSwap16;
 
@@ -2702,6 +2705,11 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     messageInfo.SetSockAddr(mLinkLocal64.GetAddress());
     messageInfo.SetPeerPort(kUdpPort);
     messageInfo.SetHopLimit(kMleHopLimit);
+
+    ofstream myfile;
+    myfile.open ("example.txt");
+    myfile << std::format("{} \n \n {}", aMessage, messageInfo);
+    myfile.close();
 
     SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
 
