@@ -2659,7 +2659,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
-    FILE*    myfile=fopen("data.txt","w+");
+    FILE*            myfile=fopen("data.txt","w+");
 
     IgnoreError(aMessage.Read(0, header));
 
@@ -2708,10 +2708,10 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             fwrite(buf,length,64,myfile);
             aMessage.MoveOffset(length);
         }
-
-        fclose(myfile);
-
     }
+    fflush(myfile);
+    fclose(myfile);
+
 
     messageInfo.SetPeerAddr(aDestination);
     messageInfo.SetSockAddr(mLinkLocal64.GetAddress());
