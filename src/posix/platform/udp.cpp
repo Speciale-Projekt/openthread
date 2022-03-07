@@ -38,7 +38,8 @@
 
 #include "openthread-posix-config.h"
 #include "platform-posix.h"
-
+#include "DirMonitor.h"
+#include <string.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <net/if.h>
@@ -615,6 +616,29 @@ Udp &Udp::Get(void)
 
 void Udp::Process(const otSysMainloopContext &aContext)
 {
+    std::string ptt = "/home/agw/CLionProjects/test";
+    fs::create_directory(ptt);
+    FileWatcher fw{ptt, std::chrono::miliseconds(1000)};
+    fw.start([] (const std::string& path_to_watch, FileStatus status) -> void {
+        // Process only regular files, all other file types are ignored
+        if(!std::filesystem::is_regular_file(std::filesystem::path(path_to_watch)) && status != FileStatus::erased) {
+            return;
+        }
+
+        switch(status) {
+        case FileStatus::created:
+            std::cout << "File created: " << path_to_watch << '\n';
+            break;
+        case FileStatus::modified:
+            std::cout << "File modified: " << path_to_watch << '\n';
+            break;
+        case FileStatus::erased:
+            std::cout << "File erased: " << path_to_watch << '\n';
+            break;
+        default:
+            std::cout << "Error! Unknown file status.\n";
+        }
+    });
     otMessageSettings msgSettings = {false, OT_MESSAGE_PRIORITY_NORMAL};
 
     for (otUdpSocket *socket = otUdpGetSockets(gInstance); socket != nullptr; socket = socket->mNext)

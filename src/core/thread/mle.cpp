@@ -35,7 +35,7 @@
 
 #include <openthread/platform/radio.h>
 #include <openthread/platform/time.h>
-
+#include "string.h"
 #include "common/array.hpp"
 #include "common/as_core_type.hpp"
 #include "common/code_utils.hpp"
@@ -2659,6 +2659,19 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
+    FILE* fp = fopen("davs.txt", "a+");
+    while (aMessage.GetOffset() < aMessage.GetLength())
+    {
+        length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+        fwrite(&aDestination, sizeof(aDestination), 64, fp);
+        fwrite(buf, aMessage.GetLength(), 64, fp);
+        aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
+        aMessage.MoveOffset(length);
+    }
+
+    fflush(fp);
+    fclose(fp);
+
 
     IgnoreError(aMessage.Read(0, header));
 
@@ -2757,6 +2770,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
     length = aMessage.ReadBytes(aMessage.GetOffset(), &header, sizeof(header));
     VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
+
+
 
     if (header.GetSecuritySuite() == Header::kNoSecurity)
     {
