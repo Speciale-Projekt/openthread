@@ -2659,9 +2659,11 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
-    FILE*            myfile=fopen("data.txt","w+");
+    FILE*            myfile=fopen("data.txt","a+");
 
     IgnoreError(aMessage.Read(0, header));
+
+    fputs("NY BESKED",myfile);
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
