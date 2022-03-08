@@ -27,6 +27,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <openthread-core-config.h>
 #include <openthread/config.h>
 
@@ -34,6 +35,7 @@
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
 #include <openthread/platform/logging.h>
+#include <sys/inotify.h>
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
@@ -134,11 +136,22 @@ pseudo_reset:
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
 
+    int fd;
+    int wd;
+    FILE* file = fopen("123.txt", "a");
+
+    fd = inotify_init();
+    wd = inotify_add_watch(fd,"readfile", IN_MODIFY);
+
+
     while (!otSysPseudoResetWasRequested())
     {
         otTaskletsProcess(instance);
         otSysProcessDrivers(instance);
+        if (wd > 0)
+            fputs("123", file);
     }
+
 
     otInstanceFinalize(instance);
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
