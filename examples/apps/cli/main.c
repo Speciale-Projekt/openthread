@@ -27,16 +27,22 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
 #include <openthread-core-config.h>
+#include <stdio.h>
 #include <openthread/config.h>
 #include <openthread/message.h>
 
+#include <stdlib.h>
+#include <time.h>
+
+#include <sys/inotify.h>
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
-#include <openthread/platform/logging.h>
 #include <openthread/thread.h>
+#include <openthread/udp.h>
+#include <openthread/platform/logging.h>
+#include "cli/shittylogger.h"
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
@@ -48,7 +54,14 @@
  *
  */
 extern void otAppCliInit(otInstance *aInstance);
-
+int         fd;
+int         wd;
+#define MAX_EVENTS 1024 /* Maximum number of events to process*/
+#define LEN_NAME                                                                              \
+    16                                            /* Assuming that the length of the filename \
+                             won't exceed 16 bytes*/
+#define EVENT_SIZE (sizeof(struct inotify_event)) /*size of one event*/
+#define BUF_LEN (MAX_EVENTS * (EVENT_SIZE + LEN_NAME))
 #if OPENTHREAD_EXAMPLES_SIMULATION
 #include <setjmp.h>
 #include <unistd.h>
@@ -138,14 +151,17 @@ pseudo_reset:
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
-    if (!thisPath)
+    int       rc;
+    pthread_t listenThread;
+    rc = pthread_create(&listenThread, NULL, listenLocal, (void *) instance);
+
+    if (rc)
     {
-        printf("No path found\n");
-        exit(1);
+        printf("Error:unable to create thread, %d\n", rc);
+        exit(-1);
     }
-    fd = inotify_init();
-    wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE);
-    while (1)
+
+    while (!otSysPseudoResetWasRequested())
     {
         otTaskletsProcess(instance);
         otSysProcessDrivers(instance);

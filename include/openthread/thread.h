@@ -195,6 +195,11 @@ typedef struct otThreadParentResponseInfo
 } otThreadParentResponseInfo;
 
 /**
+ *  Hej alle sammen.
+ * */
+void handleUDP(otInstance *aInstance, otMessage * message, const otMessageInfo *aMessageInfo );
+
+/**
  * This function starts Thread protocol operation.
  *
  * The interface must be up when calling this function.
@@ -252,6 +257,7 @@ otError otThreadDiscover(otInstance *             aInstance,
                          bool                     aEnableEui64Filtering,
                          otHandleActiveScanResult aCallback,
                          void *                   aCallbackContext);
+
 
 /**
  * This function determines if an MLE Thread Discovery is currently in progress.
