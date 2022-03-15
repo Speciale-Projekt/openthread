@@ -2694,7 +2694,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            fwrite(buf,length,64,myfile);
+            fwrite(buf,length,sizeof(buf),myfile);
             aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);

@@ -53,6 +53,9 @@ extern void otAppCliInit(otInstance *aInstance);
 #include <setjmp.h>
 #include <unistd.h>
 
+#include <pthread.h>
+
+void listenLocal(otInstance *instance);
 jmp_buf gResetJump;
 
 void __gcov_flush();
@@ -144,37 +147,11 @@ pseudo_reset:
     wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE);
     while (1)
     {
-        int  i = 0, length;
-        char buffer[BUF_LEN];
-        length = read(fd, buffer, BUF_LEN);
-
-        while (i < length)
-        {
-            struct inotify_event *event = (struct inotify_event *)&buffer[i];
-            if (event->len)
-            {
-                if (event->mask & IN_MODIFY)
-                {
-                    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
-                    settings->mLinkSecurityEnabled = 0;
-                    settings->mPriority            = 1;
-                    otMessage *aMessage;
-                    aMessage = otUdpNewMessage(instance, settings);
-                    otMessageWrite(aMessage, 0, 0, 0);
-                    otMessageInfo * b=NULL;
-                    handleUDP(instance, aMessage, b);
-                    FILE *fp = fopen(thisPath, "r");
-
-                    fclose(fp);
-                }
-            }
-            i += EVENT_SIZE + event->len;
-        }
-
-        // otTaskletsProcess(instance);
-        // otSysProcessDrivers(instance);
+        otTaskletsProcess(instance);
+        otSysProcessDrivers(instance);
     }
 
+    pthread_cancel(listenThread);
 
     otInstanceFinalize(instance);
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
@@ -196,3 +173,45 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     va_end(ap);
 }
 #endif
+
+void * listenLocal(void *instance)
+{
+    char       *thisPath = "test.txt";
+
+    if (!thisPath)
+    {
+        printf("No path found\n");
+        exit(1);
+    }
+    fd = inotify_init();
+    wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE);
+    while(1)
+    {
+        int  i = 0, length;
+        char buffer[BUF_LEN];
+        length = read(fd, buffer, BUF_LEN);
+
+        while (i < length)
+        {
+            struct inotify_event *event = (struct inotify_event *)&buffer[i];
+            if (event->len)
+            {
+                if (event->mask & IN_MODIFY)
+                {
+                    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+                    settings->mLinkSecurityEnabled = 0;
+                    settings->mPriority            = 1;
+                    otMessage *aMessage;
+                    aMessage = otUdpNewMessage(instance, settings);
+                    otMessageWrite(aMessage, 0, 0, 0);
+                    otMessageInfo *b = NULL;
+                    handleUDP(instance, aMessage, b);
+                    FILE *fp = fopen(thisPath, "r");
+
+                    fclose(fp);
+                }
+            }
+            i += EVENT_SIZE + event->len;
+        }
+    }
+}
