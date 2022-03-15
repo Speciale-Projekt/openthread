@@ -1370,10 +1370,10 @@ protected:
      *
      */
     Error SendDataRequest(const Ip6::Address &aDestination,
-                          const uint8_t *     aTlvs,
+                          const uint8_t      *aTlvs,
                           uint8_t             aTlvsLength,
                           uint16_t            aDelay,
-                          const uint8_t *     aExtraTlvs       = nullptr,
+                          const uint8_t      *aExtraTlvs       = nullptr,
                           uint8_t             aExtraTlvsLength = 0);
 
     /**
@@ -1790,7 +1790,11 @@ private:
     static void HandleMessageTransmissionTimer(Timer &aTimer);
     void        HandleMessageTransmissionTimer(void);
     static void HandleUdpReceive(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
-    void        HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+public:
+    void HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+
     void        ScheduleMessageTransmissionTimer(void);
     Error       ReadChallengeOrResponse(const Message &aMessage, uint8_t aTlvType, Challenge &aBuffer);
 

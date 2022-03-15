@@ -43,6 +43,10 @@
 
 using namespace ot;
 
+void handleUDP(otInstance *aInstance, otMessage * aMessage, const otMessageInfo *aMessageInfo ){
+    AsCoreType(aInstance).Get<Mle::Mle>().HandleUdpReceive(AsCoreType(aMessage), AsCoreType(aMessageInfo));
+}
+
 uint32_t otThreadGetChildTimeout(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::MleRouter>().GetTimeout();

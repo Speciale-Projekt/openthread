@@ -30,17 +30,17 @@
 #include <stdio.h>
 #include <openthread-core-config.h>
 #include <openthread/config.h>
+#include <openthread/message.h>
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
 #include <openthread/platform/logging.h>
-#include <sys/inotify.h>
+#include <openthread/thread.h>
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
 #include "common/code_utils.hpp"
-
 /**
  * This function initializes the CLI app.
  *
@@ -135,21 +135,44 @@ pseudo_reset:
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
-
-    int fd;
-    int wd;
-    FILE* file = fopen("123.txt", "a");
-
-    fd = inotify_init();
-    wd = inotify_add_watch(fd,"readfile", IN_MODIFY);
-
-
-    while (!otSysPseudoResetWasRequested())
+    if (!thisPath)
     {
-        otTaskletsProcess(instance);
-        otSysProcessDrivers(instance);
-        if (wd > 0)
-            fputs("123", file);
+        printf("No path found\n");
+        exit(1);
+    }
+    fd = inotify_init();
+    wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE);
+    while (1)
+    {
+        int  i = 0, length;
+        char buffer[BUF_LEN];
+        length = read(fd, buffer, BUF_LEN);
+
+        while (i < length)
+        {
+            struct inotify_event *event = (struct inotify_event *)&buffer[i];
+            if (event->len)
+            {
+                if (event->mask & IN_MODIFY)
+                {
+                    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+                    settings->mLinkSecurityEnabled = 0;
+                    settings->mPriority            = 1;
+                    otMessage *aMessage;
+                    aMessage = otUdpNewMessage(instance, settings);
+                    otMessageWrite(aMessage, 0, 0, 0);
+                    otMessageInfo * b=NULL;
+                    handleUDP(instance, aMessage, b);
+                    FILE *fp = fopen(thisPath, "r");
+
+                    fclose(fp);
+                }
+            }
+            i += EVENT_SIZE + event->len;
+        }
+
+        // otTaskletsProcess(instance);
+        // otSysProcessDrivers(instance);
     }
 
 
