@@ -42,10 +42,10 @@
 #include <openthread/thread.h>
 #include <openthread/udp.h>
 #include <openthread/platform/logging.h>
-#include "cli/shittylogger.h"
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
+#include "cli/cli_shitty_logger.h"
 #include "common/code_utils.hpp"
 /**
  * This function initializes the CLI app.
@@ -68,7 +68,7 @@ int         wd;
 
 #include <pthread.h>
 
-void listenLocal(otInstance *instance);
+void   *listenLocal(void *instance);
 jmp_buf gResetJump;
 
 void __gcov_flush();
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 #endif
 
 pseudo_reset:
-
+    rotate_shitty_log();
     otSysInit(argc, argv);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
@@ -153,19 +153,21 @@ pseudo_reset:
 #endif
     int       rc;
     pthread_t listenThread;
-    rc = pthread_create(&listenThread, NULL, listenLocal, (void *) instance);
+    rc = pthread_create(&listenThread, NULL, listenLocal, (void *)instance);
 
     if (rc)
     {
         printf("Error:unable to create thread, %d\n", rc);
         exit(-1);
     }
+    shitty_log("Info", "Before Thread Start");
 
     while (!otSysPseudoResetWasRequested())
     {
         otTaskletsProcess(instance);
         otSysProcessDrivers(instance);
     }
+    shitty_log("Info", "OT factory reset was initialized");
 
     pthread_cancel(listenThread);
 
@@ -190,9 +192,9 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 }
 #endif
 
-void * listenLocal(void *instance)
+void *listenLocal(void *instance)
 {
-    char       *thisPath = "test.txt";
+    char *thisPath = "test.txt";
 
     if (!thisPath)
     {
@@ -200,34 +202,49 @@ void * listenLocal(void *instance)
         exit(1);
     }
     fd = inotify_init();
-    wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE);
-    while(1)
+    wd = inotify_add_watch(fd, thisPath, IN_MODIFY | IN_CREATE | IN_DELETE | IN_IGNORED);
+    while (1)
     {
-        int  i = 0, length;
+        int  length;
         char buffer[BUF_LEN];
+        shitty_log("Info", "Waiting for events...");
         length = read(fd, buffer, BUF_LEN);
-
-        while (i < length)
+        if (length < 0)
         {
-            struct inotify_event *event = (struct inotify_event *)&buffer[i];
-            if (event->len)
-            {
-                if (event->mask & IN_MODIFY)
-                {
-                    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
-                    settings->mLinkSecurityEnabled = 0;
-                    settings->mPriority            = 1;
-                    otMessage *aMessage;
-                    aMessage = otUdpNewMessage(instance, settings);
-                    otMessageWrite(aMessage, 0, 0, 0);
-                    otMessageInfo *b = NULL;
-                    handleUDP(instance, aMessage, b);
-                    FILE *fp = fopen(thisPath, "r");
-
-                    fclose(fp);
-                }
-            }
-            i += EVENT_SIZE + event->len;
+            shitty_log("warning", "read error\n");
+            continue;
         }
+        shitty_log("Info", "Received event.");
+        FILE *fp = fopen(thisPath, "r");
+        if (fp == NULL)
+        {
+            shitty_log("Warning", "File not found");
+            fclose(fp);
+            continue;
+        }
+        fseek(fp, 0L, SEEK_END);
+        int sz = ftell(fp);
+        rewind(fp);
+
+        char *buff = malloc(sz);
+        fgets(buff, sz, fp);
+        fclose(fp);
+        char strbuf[1024];
+        snprintf(strbuf, sizeof(strbuf), "File sizeee: [%d]", sz);
+        shitty_log("Info", strbuf);
+
+        otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+        settings->mLinkSecurityEnabled = 0;
+        settings->mPriority            = 1;
+        otMessage *aMessage;
+        aMessage = otUdpNewMessage(instance, settings);
+        otMessageSetLength(aMessage, sz);
+
+        otMessageWrite(aMessage, 0, buff, sz);
+        otMessageInfo *b = malloc(sizeof(otMessageInfo));
+        b->mLinkInfo = malloc(2);
+        b->mHopLimit = 255;
+
+        handleUDP(instance, aMessage, b);
     }
 }

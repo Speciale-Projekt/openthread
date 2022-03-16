@@ -5,31 +5,34 @@
 #include <stdlib.h>
 #include <time.h>
 
-void shitty_log(const char * tag, const char * toLog) {
+void shitty_log(const char *tag, const char *toLog)
+{
     time_t now;
     time(&now);
 
-    FILE * fp = fopen("log.txt", "a+");
-
+    FILE *fp = fopen("log.txt", "a+");
     fprintf(fp, "%s [%s]: %s\n", ctime(&now), tag, toLog);
     fflush(fp);
     fclose(fp);
 }
 
-void rotate_shitty_log() {
+void rotate_shitty_log()
+{
     // Rotates the logs
     // Check if file exists
-    FILE * fp = fopen("log.txt", "r");
-    if (fp == NULL) {
+    FILE *fp = fopen("log.txt", "r");
+    if (fp == NULL)
+    {
         // File does not exist
         return;
     }
     // if it does exist, then move it to a backup file
     fclose(fp);
-    fp = fopen("log.txt", "r");
-    FILE * fp_bak = fopen("log.bak", "w");
-    char c;
-    while ((c = fgetc(fp)) != EOF) {
+    fp           = fopen("log.txt", "r");
+    FILE *fp_bak = fopen("log.bak", "w");
+    char  c;
+    while ((c = fgetc(fp)) != EOF)
+    {
         fputc(c, fp_bak);
     }
     fclose(fp);
