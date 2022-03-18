@@ -35,6 +35,7 @@
 
 #include <openthread/platform/radio.h>
 #include <openthread/platform/time.h>
+#include <time.h>
 
 #include "common/array.hpp"
 #include "common/as_core_type.hpp"
@@ -2669,8 +2670,10 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
 
     IgnoreError(aMessage.Read(0, header));
     shitty_log("Info", "Sending message, and writing to file");
+    time_t now;
+    time(&now);
+    fprintf(myfile, "{\"time\": \"%s\", \"type\": \"%s\", \"message\": \"", ctime(&now), "N/A");
 
-    fputs("NY BESKED", myfile);
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
@@ -2693,16 +2696,20 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         aesCcm.Header(header.GetBytes() + 1, header.GetHeaderLength());
 
         aMessage.SetOffset(header.GetLength() - 1);
+        char str_buffer[1024];
+        snprintf(str_buffer, sizeof(str_buffer), "SecurityControl[%x], SecurityControl[%x], KeyId[%x], FrameCounter[%x], Command: [%x], Length: [%d]",
+                 header.GetSecuritySuite(), header.GetSecurityControl(), header.GetKeyId(),
+                 header.GetFrameCounter(), header.GetCommand(), header.GetLength());
+        shitty_log("Debug", str_buffer);
 
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            fwrite(buf, length, sizeof(buf), myfile);
+            fwrite(buf, sizeof(uint8_t), length, myfile);
             aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);
         }
-
         aesCcm.Finalize(tag);
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
 
@@ -2713,10 +2720,11 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            fwrite(buf, length, 64, myfile);
+            fwrite(buf, sizeof(uint8_t), length, myfile);
             aMessage.MoveOffset(length);
         }
     }
+    fprintf(myfile, "\"}");
 
     fflush(myfile);
     fclose(myfile);
