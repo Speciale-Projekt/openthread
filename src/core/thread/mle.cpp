@@ -2674,6 +2674,16 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     time(&now);
     fprintf(myfile, "{\"time\": \"%s\", \"type\": \"%s\", \"message\": \"", ctime(&now), "N/A");
 
+    int offset = aMessage.GetOffset();
+
+    while (aMessage.GetOffset() < aMessage.GetLength())
+    {
+        length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+        fwrite(buf, sizeof(uint8_t), length, myfile);
+        aMessage.MoveOffset(length);
+    }
+
+    aMessage.MoveOffset(offset);
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
@@ -2705,7 +2715,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            fwrite(buf, sizeof(uint8_t), length, myfile);
             aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);
@@ -2714,15 +2723,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
 
         Get<KeyManager>().IncrementMleFrameCounter();
-    }
-    else
-    {
-        while (aMessage.GetOffset() < aMessage.GetLength())
-        {
-            length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            fwrite(buf, sizeof(uint8_t), length, myfile);
-            aMessage.MoveOffset(length);
-        }
     }
     fprintf(myfile, "\"}");
 
