@@ -50,6 +50,7 @@
 #include "common/settings.hpp"
 #include "crypto/aes_ccm.hpp"
 #include "common/shitty_log.h"
+#include "hiredis/hiredis.h"
 
 #include "meshcop/meshcop.hpp"
 #include "meshcop/meshcop_tlvs.hpp"
@@ -2666,13 +2667,13 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
 
     aDestination.ToString(ipv6HumanReadable, 16);
 
-    FILE *myfile = fopen(ipv6HumanReadable, "a+");
+    FILE *myfile = fopen("oof.txt", "w+");
 
     IgnoreError(aMessage.Read(0, header));
     shitty_log("Info", "Sending message, and writing to file");
     time_t now;
     time(&now);
-    fprintf(myfile, "{\"time\": \"%s\", \"type\": \"%s\", \"message\": \"", ctime(&now), "N/A");
+    //fprintf(myfile, "{\"time\": \"%s\", \"type\": \"%s\", \"message\": \"", ctime(&now), "N/A");
 
     int offset = aMessage.GetOffset();
 
@@ -2724,7 +2725,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
 
         Get<KeyManager>().IncrementMleFrameCounter();
     }
-    fprintf(myfile, "\"}");
+    //fprintf(myfile, "\"}");
 
     fflush(myfile);
     fclose(myfile);

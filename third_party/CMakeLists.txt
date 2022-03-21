@@ -33,3 +33,7 @@ endif()
 if(NOT OT_EXCLUDE_TCPLP_LIB)
     add_subdirectory(tcplp)
 endif()
+
+if(NOT OT_EXCLUDE_HIREDIS_LIB)
+    add_subdirectory(hiredis)
+endif()

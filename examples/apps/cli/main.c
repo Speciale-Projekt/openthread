@@ -194,7 +194,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 
 void *listenLocal(void *instance)
 {
-    char *thisPath = "test.txt";
+    char *thisPath = "foo.txt";
 
     if (!thisPath)
     {
