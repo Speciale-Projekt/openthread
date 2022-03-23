@@ -193,7 +193,10 @@ typedef struct otThreadParentResponseInfo
     uint8_t      mLinkQuality1; ///< Parent Link Quality 1
     bool         mIsAttached;   ///< Is the node receiving parent response attached
 } otThreadParentResponseInfo;
-
+/**
+ *  Hej alle sammen.
+ * */
+void handleUDP(otInstance *aInstance, otMessage * message, const otMessageInfo *aMessageInfo );
 /**
  * This function starts Thread protocol operation.
  *

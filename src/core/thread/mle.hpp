@@ -1607,7 +1607,6 @@ protected:
     TimerMilli    mMessageTransmissionTimer; ///< The timer for (re-)sending of MLE messages (e.g. Child Update).
     uint8_t       mParentLeaderCost;
 
-private:
     static constexpr uint8_t kMleHopLimit        = 255;
     static constexpr uint8_t kMleSecurityTagSize = 4; // Security tag size in bytes.
 
@@ -1755,7 +1754,7 @@ private:
             }
         }
 
-    private:
+
         uint8_t  mSecuritySuite;
         uint8_t  mSecurityControl;
         uint32_t mFrameCounter;
@@ -1779,7 +1778,7 @@ private:
         void     ApplyMeshLocalPrefix(const MeshLocalPrefix &aPrefix) { GetAddress().SetPrefix(aPrefix); }
     };
 #endif
-
+public:
     Error       Start(StartMode aMode);
     void        Stop(StopMode aMode);
     void        HandleNotifierEvents(Events aEvents);

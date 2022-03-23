@@ -28,17 +28,34 @@
 
 #include <assert.h>
 #include <openthread-core-config.h>
+#include <stdio.h>
 #include <openthread/config.h>
+#include <openthread/message.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/ethernet.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <time.h>
+#include <pthread.h>
 
+#include <sys/inotify.h>
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
+#include <openthread/thread.h>
+#include <openthread/udp.h>
 #include <openthread/platform/logging.h>
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
 #include "common/code_utils.hpp"
 
+int id;
 /**
  * This function initializes the CLI app.
  *
@@ -46,6 +63,8 @@
  *
  */
 extern void otAppCliInit(otInstance *aInstance);
+void    *    hackyUDPSocket();
+void        bzero();
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
 #include <setjmp.h>
@@ -92,6 +111,8 @@ static const otCliCommand kCommands[] = {{"exit", ProcessExit}};
 int main(int argc, char *argv[])
 {
     otInstance *instance;
+    // Convert char * to int
+    id = atoi(argv[1]);
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
     if (setjmp(gResetJump))
@@ -134,12 +155,23 @@ pseudo_reset:
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
 
+    int       rc;
+    pthread_t listenThread;
+    rc = pthread_create(&listenThread, NULL, hackyUDPSocket, (void *)instance);
+
+    if (rc)
+    {
+        printf("Error:unable to create thread, %d\n", rc);
+        exit(-1);
+    }
+
     while (!otSysPseudoResetWasRequested())
     {
         otTaskletsProcess(instance);
         otSysProcessDrivers(instance);
     }
 
+    pthread_cancel(listenThread);
     otInstanceFinalize(instance);
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     free(otInstanceBuffer);
@@ -160,3 +192,68 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     va_end(ap);
 }
 #endif
+void * hackyUDPSocket(otInstance *instance)
+{
+    struct sockaddr_in serverAddr, clientAddr;
+    int                listenAddr   = 5000 + id;
+    char              *listenDomain = "127.0.0.1";
+
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+    {
+        perror("socket");
+        exit(1);
+    }
+
+    bzero(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family      = AF_INET;
+    serverAddr.sin_port        = htons(listenAddr);
+    serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
+    memset(serverAddr.sin_zero, '\0', sizeof(serverAddr.sin_zero));
+
+    // Bind socket
+    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+    {
+        perror("bind");
+        exit(1);
+    }
+
+    while(1) {
+
+        // Get message
+
+        char      buffer[1024];
+        socklen_t clilen = sizeof(clientAddr);
+        int       n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
+        if (n < 0)
+        {
+            perror("recvfrom");
+            exit(1);
+        }
+        buffer[n] = '\0';
+        printf("Received %d bytes from %s:%d\n", n, inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+        printf("Message: %s\n", buffer);
+
+        char *buff = malloc(n);
+        memcpy(buff, buffer, n);
+        otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+        settings->mLinkSecurityEnabled = 0;
+        settings->mPriority            = 1;
+        otMessage *aMessage;
+        aMessage = otUdpNewMessage(instance, settings);
+        otMessageSetLength(aMessage, n);
+
+        otMessageWrite(aMessage, 0, buff, n);
+        otMessageInfo *b = malloc(sizeof(otMessageInfo));
+        b->mLinkInfo     = malloc(2);
+        b->mHopLimit     = 255;
+
+        handleUDP(instance, aMessage, b);
+    }
+
+}
+
+void bzero(void *s, size_t n)
+{
+    memset(s, 0, n);
+}

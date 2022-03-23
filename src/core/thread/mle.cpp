@@ -1014,7 +1014,7 @@ const LeaderData &Mle::GetLeaderData(void)
 
 Message *Mle::NewMleMessage(void)
 {
-    Message *         message;
+    Message          *message;
     Message::Settings settings(Message::kNoLinkSecurity, Message::kPriorityNet);
 
     message = mSocket.NewMessage(0, settings);
@@ -1961,8 +1961,8 @@ void Mle::HandleDelayedResponseTimer(void)
     DelayedResponseMetadata metadata;
     TimeMilli               now          = TimerMilli::GetNow();
     TimeMilli               nextSendTime = now.GetDistantFuture();
-    Message *               message;
-    Message *               nextMessage;
+    Message                *message;
+    Message                *nextMessage;
 
     for (message = mDelayedResponses.GetHead(); message != nullptr; message = nextMessage)
     {
@@ -2021,7 +2021,7 @@ void Mle::HandleDelayedResponseTimer(void)
 
 void Mle::RemoveDelayedDataResponseMessage(void)
 {
-    Message *               message = mDelayedResponses.GetHead();
+    Message                *message = mDelayedResponses.GetHead();
     DelayedResponseMetadata metadata;
 
     while (message != nullptr)
@@ -2063,7 +2063,7 @@ void Mle::RemoveDelayedDataRequestMessage(const Ip6::Address &aDestination)
 Error Mle::SendParentRequest(ParentRequestType aType)
 {
     Error        error = kErrorNone;
-    Message *    message;
+    Message     *message;
     uint8_t      scanMask = 0;
     Ip6::Address destination;
 
@@ -2123,7 +2123,7 @@ Error Mle::SendChildIdRequest(void)
     Error        error   = kErrorNone;
     uint8_t      tlvs[]  = {Tlv::kAddress16, Tlv::kNetworkData, Tlv::kRoute};
     uint8_t      tlvsLen = sizeof(tlvs);
-    Message *    message = nullptr;
+    Message     *message = nullptr;
     Ip6::Address destination;
 
     if (mParent.GetExtAddress() == mParentCandidate.GetExtAddress())
@@ -2187,10 +2187,10 @@ exit:
 }
 
 Error Mle::SendDataRequest(const Ip6::Address &aDestination,
-                           const uint8_t *     aTlvs,
+                           const uint8_t      *aTlvs,
                            uint8_t             aTlvsLength,
                            uint16_t            aDelay,
-                           const uint8_t *     aExtraTlvs,
+                           const uint8_t      *aExtraTlvs,
                            uint8_t             aExtraTlvsLength)
 {
     Error    error = kErrorNone;
@@ -2370,7 +2370,7 @@ Error Mle::SendChildUpdateRequest(void)
 {
     Error                   error = kErrorNone;
     Ip6::Address            destination;
-    Message *               message = nullptr;
+    Message                *message = nullptr;
     AddressRegistrationMode mode    = kAppendAllAddresses;
 
     if (!mParent.IsStateValidOrRestoring())
@@ -2449,7 +2449,7 @@ Error Mle::SendChildUpdateResponse(const uint8_t *aTlvs, uint8_t aNumTlvs, const
 {
     Error        error = kErrorNone;
     Ip6::Address destination;
-    Message *    message;
+    Message     *message;
     bool         checkAddress = false;
 
     VerifyOrExit((message = NewMleMessage()) != nullptr, error = kErrorNoBufs);
@@ -2535,7 +2535,7 @@ void Mle::SendAnnounce(uint8_t aChannel, const Ip6::Address &aDestination, Annou
     Error              error = kErrorNone;
     ChannelTlv         channel;
     MeshCoP::Timestamp activeTimestamp;
-    Message *          message = nullptr;
+    Message           *message = nullptr;
 
     VerifyOrExit(Get<Mac::Mac>().GetSupportedChannelMask().ContainsChannel(aChannel), error = kErrorInvalidArgs);
     VerifyOrExit((message = NewMleMessage()) != nullptr, error = kErrorNoBufs);
@@ -2659,8 +2659,10 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
+    FILE            *fp = fopen("test.txt", "a+");
 
     IgnoreError(aMessage.Read(0, header));
+    int offset = aMessage.GetOffset();
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
@@ -2681,23 +2683,35 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         aesCcm.Header(&mLinkLocal64.GetAddress(), sizeof(mLinkLocal64.GetAddress()));
         aesCcm.Header(&aDestination, sizeof(aDestination));
         aesCcm.Header(header.GetBytes() + 1, header.GetHeaderLength());
-
-        aMessage.SetOffset(header.GetLength() - 1);
+        aMessage.SetOffset(offset);
 
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
+            fwrite(buf, 1, length, fp);
+            aMessage.MoveOffset(length);
+        }
+
+        aMessage.SetOffset(header.GetLength() - 1);
+
+
+        while (aMessage.GetOffset() < aMessage.GetLength())
+        {
+            length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+            // aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);
         }
 
-        aesCcm.Finalize(tag);
+        // aesCcm.Finalize(tag);
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
+
+        fputs("AAAA", fp);
 
         Get<KeyManager>().IncrementMleFrameCounter();
     }
-
+    fflush(fp);
+    fclose(fp);
     messageInfo.SetPeerAddr(aDestination);
     messageInfo.SetSockAddr(mLinkLocal64.GetAddress());
     messageInfo.SetPeerPort(kUdpPort);
@@ -2745,11 +2759,10 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     uint16_t           mleOffset;
     uint8_t            buf[64];
     uint16_t           length;
-    uint8_t            tag[kMleSecurityTagSize];
-    uint8_t            command;
-    Neighbor *         neighbor;
-    bool               skipLoggingError = false;
-
+    // uint8_t            tag[kMleSecurityTagSize];
+    uint8_t   command;
+    Neighbor *neighbor;
+    bool      skipLoggingError = false;
     LogDebg("Receive UDP message");
 
     VerifyOrExit(aMessageInfo.GetLinkInfo() != nullptr);
@@ -2820,25 +2833,25 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     while (aMessage.GetOffset() < aMessage.GetLength())
     {
         length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-        aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kDecrypt);
+        // aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kDecrypt);
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
         aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
 #endif
         aMessage.MoveOffset(length);
     }
 
-    aesCcm.Finalize(tag);
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    if (memcmp(messageTag, tag, sizeof(tag)) != 0)
-    {
-        // We skip logging security check failures for broadcast MLE
-        // messages since it can be common to receive such messages
-        // from adjacent Thread networks.
-        skipLoggingError =
-            (aMessageInfo.GetSockAddr().IsMulticast() && aMessageInfo.GetThreadLinkInfo()->IsDstPanIdBroadcast());
-        ExitNow(error = kErrorSecurity);
-    }
-#endif
+    // aesCcm.Finalize(tag);
+    /*#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+        if (memcmp(messageTag, tag, sizeof(tag)) != 0)
+        {
+            // We skip logging security check failures for broadcast MLE
+            // messages since it can be common to receive such messages
+            // from adjacent Thread networks.
+            skipLoggingError =
+                (aMessageInfo.GetSockAddr().IsMulticast() && aMessageInfo.GetThreadLinkInfo()->IsDstPanIdBroadcast());
+            ExitNow(error = kErrorSecurity);
+        }
+    #endif*/
 
     if (keySequence > Get<KeyManager>().GetCurrentKeySequence())
     {
@@ -3628,9 +3641,9 @@ exit:
     LogProcessError(kTypeParentResponse, error);
 }
 
-void Mle::HandleChildIdResponse(const Message &         aMessage,
+void Mle::HandleChildIdResponse(const Message          &aMessage,
                                 const Ip6::MessageInfo &aMessageInfo,
-                                const Neighbor *        aNeighbor)
+                                const Neighbor         *aNeighbor)
 {
     Error              error = kErrorNone;
     LeaderData         leaderData;
@@ -3867,9 +3880,9 @@ exit:
     LogProcessError(kTypeChildUpdateRequestOfParent, error);
 }
 
-void Mle::HandleChildUpdateResponse(const Message &         aMessage,
+void Mle::HandleChildUpdateResponse(const Message          &aMessage,
                                     const Ip6::MessageInfo &aMessageInfo,
-                                    const Neighbor *        aNeighbor)
+                                    const Neighbor         *aNeighbor)
 {
     Error     error = kErrorNone;
     uint8_t   status;
@@ -4063,9 +4076,9 @@ exit:
 }
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
-void Mle::HandleLinkMetricsManagementRequest(const Message &         aMessage,
+void Mle::HandleLinkMetricsManagementRequest(const Message          &aMessage,
                                              const Ip6::MessageInfo &aMessageInfo,
-                                             Neighbor *              aNeighbor)
+                                             Neighbor               *aNeighbor)
 {
     Error               error = kErrorNone;
     LinkMetrics::Status status;
@@ -4084,9 +4097,9 @@ exit:
 #endif // OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_INITIATOR_ENABLE
-void Mle::HandleLinkMetricsManagementResponse(const Message &         aMessage,
+void Mle::HandleLinkMetricsManagementResponse(const Message          &aMessage,
                                               const Ip6::MessageInfo &aMessageInfo,
-                                              Neighbor *              aNeighbor)
+                                              Neighbor               *aNeighbor)
 {
     Error error = kErrorNone;
 
@@ -4181,7 +4194,7 @@ Error Mle::CheckReachability(uint16_t aMeshDest, Ip6::Header &aIp6Header)
 void Mle::InformPreviousParent(void)
 {
     Error            error   = kErrorNone;
-    Message *        message = nullptr;
+    Message         *message = nullptr;
     Ip6::MessageInfo messageInfo;
 
     VerifyOrExit((message = Get<Ip6::Ip6>().NewMessage(0)) != nullptr, error = kErrorNoBufs);
