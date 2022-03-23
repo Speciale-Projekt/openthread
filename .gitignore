@@ -68,3 +68,6 @@ cmake-build-*/**
 
 # Python bytecodes
 __pycache__
+core.*
+out/
+**/test.txt
