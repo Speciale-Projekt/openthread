@@ -28,6 +28,8 @@
 
 # Don't allow this top-level makefile's targets to be built in parallel.
 
+LDFLAGS= -pthread
+
 .NOTPARALLEL:
 
 COVERAGE                       ?= 0
@@ -329,6 +331,8 @@ distcheck: $(DISTCHECK_TARGETS)
 coverage: $(COVERAGE_TARGETS)
 
 stage: $(STAGE_TARGETS)
+
+LIBS=		-pthread
 
 DIRECTORIES     = $(TopResultDir) $(TopResultDir)/$(TargetTuple)/lib $(BUILD_DIRS)
 
