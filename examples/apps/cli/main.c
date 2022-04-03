@@ -26,22 +26,20 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include <openthread-core-config.h>
-#include <stdio.h>
-#include <openthread/config.h>
-#include <openthread/message.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/ethernet.h>
 #include <arpa/inet.h>
+#include <assert.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
+#include <openthread-core-config.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <time.h>
-#include <pthread.h>
+#include <openthread/config.h>
+#include <openthread/message.h>
 
 #include <sys/inotify.h>
 #include <openthread/cli.h>
@@ -62,8 +60,8 @@ int id;
  * @param[in]  aInstance  The OpenThread instance structure.
  *
  */
-extern void otAppCliInit(otInstance *aInstance);
-void    *    hackyUDPSocket();
+extern void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId);
+void       *hackyUDPSocket();
 void        bzero();
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
@@ -111,6 +109,11 @@ static const otCliCommand kCommands[] = {{"exit", ProcessExit}};
 int main(int argc, char *argv[])
 {
     otInstance *instance;
+    // Initialize the dataset struct to null
+    dataset * ds;
+    // Set the dataset struct to something but let all values be null
+    ds = (dataset *)malloc(sizeof(dataset));
+
     // Convert char * to int
     id = atoi(argv[1]);
 
@@ -131,8 +134,7 @@ int main(int argc, char *argv[])
 #endif
 
 pseudo_reset:
-
-    otSysInit(argc, argv);
+    otSysInit(argc, argv, ds);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     // Call to query the buffer size
@@ -148,8 +150,9 @@ pseudo_reset:
     instance = otInstanceInitSingle();
 #endif
     assert(instance);
-
-    otAppCliInit(instance);
+    if (ds->networkKey != NULL) {
+    }
+    otAppCliInit(instance, ds->networkKey, ds->panId);
 
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
@@ -192,7 +195,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     va_end(ap);
 }
 #endif
-void * hackyUDPSocket(otInstance *instance)
+void *hackyUDPSocket(otInstance *instance)
 {
     struct sockaddr_in serverAddr, clientAddr;
     int                listenAddr   = 5000 + id;
@@ -218,8 +221,8 @@ void * hackyUDPSocket(otInstance *instance)
         exit(1);
     }
 
-    while(1) {
-
+    while (1)
+    {
         // Get message
 
         char      buffer[1024];
@@ -250,7 +253,6 @@ void * hackyUDPSocket(otInstance *instance)
 
         handleUDP(instance, aMessage, b);
     }
-
 }
 
 void bzero(void *s, size_t n)

@@ -45,10 +45,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <cjson/cJSON.c>
+#include "simulation/custom_dataset.h"
+
 
 #include <openthread/tasklet.h>
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/radio.h>
+
 
 uint32_t gNodeId = 1;
 
@@ -72,6 +76,7 @@ enum
 {
     OT_SIM_OPT_HELP        = 'h',
     OT_SIM_OPT_SLEEP_TO_TX = 't',
+    OT_JSON_DATASET        = 'd',
     OT_SIM_OPT_TIME_SPEED  = 's',
     OT_SIM_OPT_UNKNOWN     = '?',
 };
@@ -84,20 +89,24 @@ static void PrintUsage(const char *aProgramName, int aExitCode)
             "Options:\n"
             "    -h --help              Display this usage information.\n"
             "    -t --sleep-to-tx       Let radio support direct transition from sleep to TX with CSMA.\n"
+            "    -d --dataset           Use JSON dataset.\n"
             "    -s --time-speed=val    Speed up the time in simulation.\n",
             aProgramName);
 
     exit(aExitCode);
 }
 
-void otSysInit(int aArgCount, char *aArgVector[])
+void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
 {
     char *   endptr;
     uint32_t speedUpFactor = 1;
+    ds->panId = NULL;
+    ds->networkKey = NULL;
 
     static const struct option long_options[] = {
         {"help", no_argument, 0, OT_SIM_OPT_HELP},
         {"sleep-to-tx", no_argument, 0, OT_SIM_OPT_SLEEP_TO_TX},
+        {"dataset", required_argument, 0, OT_JSON_DATASET},
         {"time-speed", required_argument, 0, OT_SIM_OPT_TIME_SPEED},
         {0, 0, 0, 0},
     };
@@ -129,6 +138,50 @@ void otSysInit(int aArgCount, char *aArgVector[])
             break;
         case OT_SIM_OPT_SLEEP_TO_TX:
             gRadioCaps |= OT_RADIO_CAPS_SLEEP_TO_TX;
+            break;
+
+        case OT_JSON_DATASET:
+            // {
+            //     "Network_Key": string
+            //     "PAN_ID": string
+            // }
+            // parse the json struct and set the corresponding variables in the instance
+
+
+            if (optarg != NULL)
+            {
+                // parse the json string
+                cJSON *json_root = cJSON_Parse(optarg);
+                if (json_root == NULL)
+                {
+                    const char *error_ptr = cJSON_GetErrorPtr();
+                    if (error_ptr != NULL)
+                    {
+                        fprintf(stderr, "Error before: %s\n", error_ptr);
+                    }
+                    exit(1);
+                }
+                else
+                {
+
+                    // get the networkkey
+                    cJSON *networkKey_json = cJSON_GetObjectItemCaseSensitive(json_root, "Network_Key");
+                    if (networkKey_json != NULL)
+                    {
+                        // Set value in dataset
+                        ds->networkKey = networkKey_json->valuestring;
+                    } else {
+                    }
+
+                    // get the panid
+                    cJSON *panId_json = cJSON_GetObjectItemCaseSensitive(json_root, "PAN_ID");
+                    if (panId_json != NULL)
+                    {
+                        // Set value in dataset
+                        ds->panId = panId_json->valuestring;
+                    }
+                }
+            }
             break;
         case OT_SIM_OPT_TIME_SPEED:
             speedUpFactor = (uint32_t)strtol(optarg, &endptr, 10);

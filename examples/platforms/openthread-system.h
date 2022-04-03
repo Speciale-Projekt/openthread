@@ -31,7 +31,7 @@
  * @brief
  *   This file defines the platform-specific functions needed by OpenThread's example applications.
  */
-
+#include "simulation/custom_dataset.h"
 #ifndef OPENTHREAD_SYSTEM_H_
 #define OPENTHREAD_SYSTEM_H_
 
@@ -40,6 +40,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /**
  * This function performs all platform-specific initialization of OpenThread's drivers.
@@ -51,7 +52,7 @@ extern "C" {
  * @param[in]  argv  Argument vector.
  *
  */
-void otSysInit(int argc, char *argv[]);
+void otSysInit(int argc, char *argv[], dataset * ds);
 
 /**
  * This function performs all platform-specific deinitialization for OpenThread's drivers.

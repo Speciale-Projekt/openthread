@@ -194,6 +194,11 @@ typedef struct otThreadParentResponseInfo
     bool         mIsAttached;   ///< Is the node receiving parent response attached
 } otThreadParentResponseInfo;
 /**
+ * This structure represents the Dataset we set ~ data.
+ *
+ */
+void setDataset(otInstance *aInstance, const char * networkKey, const char * panId);
+/**
  *  Hej alle sammen.
  * */
 void handleUDP(otInstance *aInstance, otMessage * message, const otMessageInfo *aMessageInfo );

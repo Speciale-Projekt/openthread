@@ -4898,11 +4898,29 @@ void Interpreter::HandleDiscoveryRequest(const otThreadDiscoveryRequestInfo &aIn
 
 #endif // OPENTHREAD_FTD || OPENTHREAD_MTD
 
-void Interpreter::Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext)
+void Interpreter::Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId)
 {
+    char * command = (char *) malloc(sizeof(char) * 100);
     Instance *instance = static_cast<Instance *>(aInstance);
 
+
     Interpreter::sInterpreter = new (&sInterpreterRaw) Interpreter(instance, aCallback, aContext);
+    if (networkKey != NULL && panId != NULL)
+    {
+        sprintf(command, "dataset init new");
+        Interpreter::sInterpreter->ProcessLine(command);
+        sprintf(command, "dataset networkkey %s", networkKey);
+        Interpreter::sInterpreter->ProcessLine(command);
+        sprintf(command, "dataset panid %s", panId);
+        Interpreter::sInterpreter->ProcessLine(command);
+        sprintf(command, "dataset commit active");
+        Interpreter::sInterpreter->ProcessLine(command);
+        sprintf(command, "ifconfig up");
+        Interpreter::sInterpreter->ProcessLine(command);
+        sprintf(command, "thread start");
+        Interpreter::sInterpreter->ProcessLine(command);
+        free(command);
+    }
 }
 
 void Interpreter::OutputPrompt(void)
@@ -5192,9 +5210,9 @@ otError Interpreter::ProcessCommand(Arg aArgs[])
     return error;
 }
 
-extern "C" void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext)
+extern "C" void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId)
 {
-    Interpreter::Initialize(aInstance, aCallback, aContext);
+    Interpreter::Initialize(aInstance, aCallback, aContext, networkKey, panId);
 }
 
 extern "C" void otCliInputLine(char *aBuf)
