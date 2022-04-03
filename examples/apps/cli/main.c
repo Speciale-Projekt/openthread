@@ -25,6 +25,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+#include <pthread.h>
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -224,29 +225,30 @@ void *hackyUDPSocket(otInstance *instance)
     while (1)
     {
         // Get message
-
         char      buffer[1024];
         socklen_t clilen = sizeof(clientAddr);
-        int       n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
+        ssize_t n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
         if (n < 0)
         {
             perror("recvfrom");
             exit(1);
         }
-        buffer[n] = '\0';
-        printf("Received %d bytes from %s:%d\n", n, inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
-        printf("Message: %s\n", buffer);
 
-        char *buff = malloc(n);
-        memcpy(buff, buffer, n);
+
         otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
         settings->mLinkSecurityEnabled = 0;
         settings->mPriority            = 1;
         otMessage *aMessage;
         aMessage = otUdpNewMessage(instance, settings);
-        otMessageSetLength(aMessage, n);
 
-        otMessageWrite(aMessage, 0, buff, n);
+        if(otMessageSetLength(aMessage, sizeof(buffer))!= OT_ERROR_NONE){
+            perror("message write");
+            exit(1);
+        };
+        if(0 > otMessageWrite(aMessage, 0, buffer, sizeof(buffer))){
+            perror("message write");
+            exit(1);
+        };
         otMessageInfo *b = malloc(sizeof(otMessageInfo));
         b->mLinkInfo     = malloc(2);
         b->mHopLimit     = 255;

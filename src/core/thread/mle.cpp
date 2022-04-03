@@ -2662,7 +2662,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     FILE            *fp = fopen("test.txt", "a+");
 
     IgnoreError(aMessage.Read(0, header));
-    int offset = aMessage.GetOffset();
+    uint16_t offset = aMessage.GetOffset();
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
