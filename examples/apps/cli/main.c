@@ -25,14 +25,12 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-#include <pthread.h>
 
 #include <arpa/inet.h>
 #include <assert.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
 #include <openthread-core-config.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +39,9 @@
 #include <time.h>
 #include <openthread/config.h>
 #include <openthread/message.h>
+#include <sys/time.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 #include <sys/inotify.h>
 #include <openthread/cli.h>
@@ -62,7 +63,6 @@ int id;
  *
  */
 extern void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId);
-void       *hackyUDPSocket();
 void        bzero();
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
@@ -109,6 +109,10 @@ static const otCliCommand kCommands[] = {{"exit", ProcessExit}};
 
 int main(int argc, char *argv[])
 {
+    FILE *             file = fopen("log.txt", "a");
+
+    fprintf(file, "main");
+    fflush(file);
     otInstance *instance;
     // Initialize the dataset struct to null
     dataset * ds;
@@ -134,8 +138,12 @@ int main(int argc, char *argv[])
     uint8_t *otInstanceBuffer       = NULL;
 #endif
 
+    fprintf(file, "beforePseudo_reset");
+    fflush(file);
 pseudo_reset:
     otSysInit(argc, argv, ds);
+    fprintf(file, "afterPseudo_reset");
+    fflush(file);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     // Call to query the buffer size
@@ -148,35 +156,109 @@ pseudo_reset:
     // Initialize OpenThread with the buffer
     instance = otInstanceInit(otInstanceBuffer, &otInstanceBufferLength);
 #else
+    fprintf(file, "beforeinstance");
     instance = otInstanceInitSingle();
+    fprintf(file, "instancecreated");
+    fflush(file);
 #endif
     assert(instance);
     if (ds->networkKey != NULL) {
     }
+    fprintf(file, "BeforeotAppCliInit");
+    fflush(file);
     otAppCliInit(instance, ds->networkKey, ds->panId);
+    fprintf(file, "afterotAppCliInit");
+    fflush(file);
 
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
 
-    int       rc;
-    pthread_t listenThread;
-    rc = pthread_create(&listenThread, NULL, hackyUDPSocket, (void *)instance);
 
-    if (rc)
+    struct sockaddr_in serverAddr, clientAddr;
+    int                listenAddr   = 5000 + id;
+    char              *listenDomain = "127.0.0.1";
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
     {
-        printf("Error:unable to create thread, %d\n", rc);
+        fprintf(file, "socket");
+        fflush(file);
+        perror("socket");
+        exit(1);
+    }
+
+    int rc = fcntl(sockfd, F_SETFL, O_NONBLOCK);
+    if (rc < 0)
+    {
+        fprintf(file, "fcntl");
+        fflush(file);
+        perror("fcntl failed");
+        close(sockfd);
         exit(-1);
     }
 
-    while (!otSysPseudoResetWasRequested())
+    bzero(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family      = AF_INET;
+    serverAddr.sin_port        = htons(listenAddr);
+    serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
+    memset(serverAddr.sin_zero, '\0', sizeof(serverAddr.sin_zero));
+
+    // Bind socket
+    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
-        otTaskletsProcess(instance);
-        otSysProcessDrivers(instance);
+        fprintf(file, "bind");
+        fflush(file);
+        perror("bind");
+        exit(1);
     }
 
-    pthread_cancel(listenThread);
-    otInstanceFinalize(instance);
+    fprintf(file, "beforewhile");
+    fflush(file);
+    while (!otSysPseudoResetWasRequested())
+    {
+        fprintf(file, "indsicewhileloop");
+        fflush(file);
+
+        otTaskletsProcess(instance);
+        fprintf(file, "beforeprocessDrivers");
+        fflush(file);
+        otSysProcessDrivers(instance);
+        fprintf(file, "afterprocessDrivers");
+        fprintf(file, "getmessage");
+        fflush(file);
+        // Get message
+        char      buffer[1024];
+        socklen_t clilen = sizeof(clientAddr);
+        ssize_t   n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
+        fprintf(file, "n: %li ", n);
+        fflush(file);
+        if (n > 0)
+        {
+            otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+            settings->mLinkSecurityEnabled = 0;
+            settings->mPriority            = 1;
+            otMessage *aMessage;
+            aMessage = otUdpNewMessage(instance, settings);
+
+            if (otMessageSetLength(aMessage, sizeof(buffer)) != OT_ERROR_NONE)
+            {
+                perror("message write");
+            };
+            if (0 > otMessageWrite(aMessage, 0, buffer, sizeof(buffer)))
+            {
+                perror("message write");
+            };
+            otMessageInfo *b = malloc(sizeof(otMessageInfo));
+            b->mLinkInfo     = malloc(2);
+            b->mHopLimit     = 255;
+
+            fprintf(file, "beforehandleudp");
+            fflush(file);
+            handleUDP(instance, aMessage, b);
+        }
+    }
+    fclose(file);
+
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     free(otInstanceBuffer);
 #endif
@@ -196,66 +278,6 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     va_end(ap);
 }
 #endif
-void *hackyUDPSocket(otInstance *instance)
-{
-    struct sockaddr_in serverAddr, clientAddr;
-    int                listenAddr   = 5000 + id;
-    char              *listenDomain = "127.0.0.1";
-
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0)
-    {
-        perror("socket");
-        exit(1);
-    }
-
-    bzero(&serverAddr, sizeof(serverAddr));
-    serverAddr.sin_family      = AF_INET;
-    serverAddr.sin_port        = htons(listenAddr);
-    serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
-    memset(serverAddr.sin_zero, '\0', sizeof(serverAddr.sin_zero));
-
-    // Bind socket
-    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-    {
-        perror("bind");
-        exit(1);
-    }
-
-    while (1)
-    {
-        // Get message
-        char      buffer[1024];
-        socklen_t clilen = sizeof(clientAddr);
-        ssize_t n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
-        if (n < 0)
-        {
-            perror("recvfrom");
-            exit(1);
-        }
-
-
-        otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
-        settings->mLinkSecurityEnabled = 0;
-        settings->mPriority            = 1;
-        otMessage *aMessage;
-        aMessage = otUdpNewMessage(instance, settings);
-
-        if(otMessageSetLength(aMessage, sizeof(buffer))!= OT_ERROR_NONE){
-            perror("message write");
-            exit(1);
-        };
-        if(0 > otMessageWrite(aMessage, 0, buffer, sizeof(buffer))){
-            perror("message write");
-            exit(1);
-        };
-        otMessageInfo *b = malloc(sizeof(otMessageInfo));
-        b->mLinkInfo     = malloc(2);
-        b->mHopLimit     = 255;
-
-        handleUDP(instance, aMessage, b);
-    }
-}
 
 void bzero(void *s, size_t n)
 {

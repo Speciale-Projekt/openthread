@@ -2709,6 +2709,15 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         fputs("AAAA", fp);
 
         Get<KeyManager>().IncrementMleFrameCounter();
+    } else {
+        aMessage.SetOffset(offset);
+
+        while (aMessage.GetOffset() < aMessage.GetLength())
+        {
+            length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
+            fwrite(buf, 1, length, fp);
+            aMessage.MoveOffset(length);
+        }   
     }
     fflush(fp);
     fclose(fp);

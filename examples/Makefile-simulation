@@ -28,7 +28,7 @@
 
 # Don't allow this top-level makefile's targets to be built in parallel.
 
-LDFLAGS= -pthread
+LDFLAGS= -pthread -no-pie
 
 .NOTPARALLEL:
 
