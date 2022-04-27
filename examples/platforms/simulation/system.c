@@ -77,6 +77,7 @@ enum
     OT_SIM_OPT_HELP        = 'h',
     OT_SIM_OPT_SLEEP_TO_TX = 't',
     OT_JSON_DATASET        = 'd',
+    OT_USE_AS_MASTER        = 'm',
     OT_SIM_OPT_TIME_SPEED  = 's',
     OT_SIM_OPT_UNKNOWN     = '?',
 };
@@ -90,6 +91,7 @@ static void PrintUsage(const char *aProgramName, int aExitCode)
             "    -h --help              Display this usage information.\n"
             "    -t --sleep-to-tx       Let radio support direct transition from sleep to TX with CSMA.\n"
             "    -d --dataset           Use JSON dataset.\n"
+            "    -m --master             Use as master mode.\n"
             "    -s --time-speed=val    Speed up the time in simulation.\n",
             aProgramName);
 
@@ -100,6 +102,7 @@ void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
 {
     char *   endptr;
     uint32_t speedUpFactor = 1;
+    ds->int useAsMaster = 0;
     ds->panId = NULL;
     ds->networkKey = NULL;
 
@@ -107,6 +110,7 @@ void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
         {"help", no_argument, 0, OT_SIM_OPT_HELP},
         {"sleep-to-tx", no_argument, 0, OT_SIM_OPT_SLEEP_TO_TX},
         {"dataset", required_argument, 0, OT_JSON_DATASET},
+        {"master", no_argument, 0, OT_USE_AS_MASTER},
         {"time-speed", required_argument, 0, OT_SIM_OPT_TIME_SPEED},
         {0, 0, 0, 0},
     };
@@ -139,7 +143,9 @@ void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
         case OT_SIM_OPT_SLEEP_TO_TX:
             gRadioCaps |= OT_RADIO_CAPS_SLEEP_TO_TX;
             break;
-
+        case OT_USE_AS_MASTER:
+            ds->int useAsMaster = 1;
+            break;
         case OT_JSON_DATASET:
             // {
             //     "Network_Key": string

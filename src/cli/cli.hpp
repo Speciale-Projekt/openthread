@@ -144,7 +144,7 @@ public:
      * @param[in]  aContext   A pointer to a user context.
      *
      */
-    static void Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId);
+    static void Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int int useAsMaster);
 
     /**
      * This method returns whether the interpreter is initialized.

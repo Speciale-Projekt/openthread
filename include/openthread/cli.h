@@ -87,7 +87,7 @@ typedef int (*otCliOutputCallback)(void *aContext, const char *aFormat, va_list 
  * @param[in]  aContext    A user context pointer.
  *
  */
-void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId);
+void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int int useAsMaster);
 
 /**
  * This method is called to feed in a console input line.

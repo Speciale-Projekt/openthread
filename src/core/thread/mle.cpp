@@ -2659,7 +2659,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
-    FILE            *fp = fopen("test.txt", "a+");
+    FILE            *fp = fopen("device2.bin", "a+");
 
     IgnoreError(aMessage.Read(0, header));
     uint16_t offset = aMessage.GetOffset();
@@ -2706,7 +2706,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         // aesCcm.Finalize(tag);
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
 
-        fputs("AAAA", fp);
 
         Get<KeyManager>().IncrementMleFrameCounter();
     } else {
@@ -2719,6 +2718,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             aMessage.MoveOffset(length);
         }   
     }
+    fputs("AAAA", fp);
     fflush(fp);
     fclose(fp);
     messageInfo.SetPeerAddr(aDestination);

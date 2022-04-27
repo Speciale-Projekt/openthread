@@ -111,6 +111,12 @@ public:
     explicit Mle(Instance &aInstance);
 
     /**
+     * This method submits an MLE message to a hardcoded UDP socket.
+     * @param[in]  aMessage      A reference to the message.
+     *
+     */
+    void SendDirectUDP(Message &aMessage);
+    /**
      * This method enables MLE.
      *
      * @retval kErrorNone     Successfully enabled MLE.
