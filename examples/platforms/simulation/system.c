@@ -102,7 +102,7 @@ void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
 {
     char *   endptr;
     uint32_t speedUpFactor = 1;
-    ds->int useAsMaster = 0;
+    ds->useAsMaster = 0;
     ds->panId = NULL;
     ds->networkKey = NULL;
 
@@ -144,7 +144,7 @@ void otSysInit(int aArgCount, char *aArgVector[], dataset* ds)
             gRadioCaps |= OT_RADIO_CAPS_SLEEP_TO_TX;
             break;
         case OT_USE_AS_MASTER:
-            ds->int useAsMaster = 1;
+            ds->useAsMaster = 1;
             break;
         case OT_JSON_DATASET:
             // {

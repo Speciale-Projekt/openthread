@@ -62,7 +62,7 @@ int id;
  * @param[in]  aInstance  The OpenThread instance structure.
  *
  */
-extern void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId, int int useAsMaster);
+extern void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId, int useAsMaster);
 void        bzero();
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
@@ -166,7 +166,7 @@ pseudo_reset:
     }
     fprintf(file, "BeforeotAppCliInit");
     fflush(file);
-    otAppCliInit(instance, ds->networkKey, ds->panId, ds->int useAsMaster);
+    otAppCliInit(instance, ds->networkKey, ds->panId, ds->useAsMaster);
     fprintf(file, "afterotAppCliInit");
     fflush(file);
 

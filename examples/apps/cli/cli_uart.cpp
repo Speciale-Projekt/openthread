@@ -378,7 +378,7 @@ void otPlatUartSendDone(void)
     SendDoneTask();
 }
 
-extern "C" void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId, int int useAsMaster)
+extern "C" void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId, int useAsMaster)
 {
     sRxLength   = 0;
     sTxHead     = 0;
@@ -387,5 +387,5 @@ extern "C" void otAppCliInit(otInstance *aInstance, char * networkKey, char * pa
 
     IgnoreError(otPlatUartEnable());
 
-    otCliInit(aInstance, CliUartOutput, aInstance, networkKey, panId, int useAsMaster);
+    otCliInit(aInstance, CliUartOutput, aInstance, networkKey, panId, useAsMaster);
 }

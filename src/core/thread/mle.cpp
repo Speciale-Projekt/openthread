@@ -2660,6 +2660,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
     FILE            *fp = fopen("device2.bin", "a+");
+    fputs("CHILD[", fp);
 
     IgnoreError(aMessage.Read(0, header));
     uint16_t offset = aMessage.GetOffset();
@@ -2718,7 +2719,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             aMessage.MoveOffset(length);
         }   
     }
-    fputs("AAAA", fp);
+    fputs("]CHILD", fp);
     fflush(fp);
     fclose(fp);
     messageInfo.SetPeerAddr(aDestination);

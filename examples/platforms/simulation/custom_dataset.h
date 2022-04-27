@@ -10,5 +10,5 @@
 typedef struct dataset {
     char * networkKey;
     char * panId;
-    int int useAsMaster;
+    int useAsMaster;
 } dataset;

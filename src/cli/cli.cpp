@@ -4898,7 +4898,7 @@ void Interpreter::HandleDiscoveryRequest(const otThreadDiscoveryRequestInfo &aIn
 
 #endif // OPENTHREAD_FTD || OPENTHREAD_MTD
 
-void Interpreter::Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int int useAsMaster)
+void Interpreter::Initialize(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int useAsMaster)
 {
     char * command = (char *) malloc(sizeof(char) * 100);
     Instance *instance = static_cast<Instance *>(aInstance);
@@ -4907,7 +4907,7 @@ void Interpreter::Initialize(otInstance *aInstance, otCliOutputCallback aCallbac
     Interpreter::sInterpreter = new (&sInterpreterRaw) Interpreter(instance, aCallback, aContext);
     if (networkKey != NULL && panId != NULL)
     {
-        if (int useAsMaster) {
+        if (useAsMaster) {
 
             sprintf(command, "dataset init new");
             Interpreter::sInterpreter->ProcessLine(command);
@@ -5213,9 +5213,9 @@ otError Interpreter::ProcessCommand(Arg aArgs[])
     return error;
 }
 
-extern "C" void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int int useAsMaster)
+extern "C" void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aContext, char * networkKey, char * panId, int useAsMaster)
 {
-    Interpreter::Initialize(aInstance, aCallback, aContext, networkKey, panId, int useAsMaster);
+    Interpreter::Initialize(aInstance, aCallback, aContext, networkKey, panId, useAsMaster);
 }
 
 extern "C" void otCliInputLine(char *aBuf)
