@@ -28,20 +28,20 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
 #include <openthread-core-config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
 #include <openthread/config.h>
 #include <openthread/message.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
 
 #include <sys/inotify.h>
 #include <openthread/cli.h>
@@ -53,6 +53,7 @@
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
+#include "cli/shittylog.h"
 #include "common/code_utils.hpp"
 
 int id;
@@ -62,7 +63,7 @@ int id;
  * @param[in]  aInstance  The OpenThread instance structure.
  *
  */
-extern void otAppCliInit(otInstance *aInstance, char * networkKey, char * panId, int useAsMaster);
+extern void otAppCliInit(otInstance *aInstance, char *networkKey, char *panId, int useAsMaster);
 void        bzero();
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
@@ -109,13 +110,11 @@ static const otCliCommand kCommands[] = {{"exit", ProcessExit}};
 
 int main(int argc, char *argv[])
 {
-    FILE *             file = fopen("log.txt", "a");
+    rotate_shitty_log();
 
-    fprintf(file, "main");
-    fflush(file);
     otInstance *instance;
     // Initialize the dataset struct to null
-    dataset * ds;
+    dataset *ds;
     // Set the dataset struct to something but let all values be null
     ds = (dataset *)malloc(sizeof(dataset));
 
@@ -138,12 +137,8 @@ int main(int argc, char *argv[])
     uint8_t *otInstanceBuffer       = NULL;
 #endif
 
-    fprintf(file, "beforePseudo_reset");
-    fflush(file);
 pseudo_reset:
     otSysInit(argc, argv, ds);
-    fprintf(file, "afterPseudo_reset");
-    fflush(file);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     // Call to query the buffer size
@@ -156,33 +151,27 @@ pseudo_reset:
     // Initialize OpenThread with the buffer
     instance = otInstanceInit(otInstanceBuffer, &otInstanceBufferLength);
 #else
-    fprintf(file, "beforeinstance");
+
     instance = otInstanceInitSingle();
-    fprintf(file, "instancecreated");
-    fflush(file);
+
 #endif
     assert(instance);
-    if (ds->networkKey != NULL) {
+    if (ds->networkKey != NULL)
+    {
     }
-    fprintf(file, "BeforeotAppCliInit");
-    fflush(file);
+
     otAppCliInit(instance, ds->networkKey, ds->panId, ds->useAsMaster);
-    fprintf(file, "afterotAppCliInit");
-    fflush(file);
 
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
 
-
     struct sockaddr_in serverAddr, clientAddr;
     int                listenAddr   = 5000 + id;
     char              *listenDomain = "127.0.0.1";
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    int                sockfd       = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0)
     {
-        fprintf(file, "socket");
-        fflush(file);
         perror("socket");
         exit(1);
     }
@@ -190,8 +179,6 @@ pseudo_reset:
     int rc = fcntl(sockfd, F_SETFL, O_NONBLOCK);
     if (rc < 0)
     {
-        fprintf(file, "fcntl");
-        fflush(file);
         perror("fcntl failed");
         close(sockfd);
         exit(-1);
@@ -206,34 +193,24 @@ pseudo_reset:
     // Bind socket
     if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
-        fprintf(file, "bind");
-        fflush(file);
-        perror("bind");
+        perror("bind \n");
         exit(1);
     }
 
-    fprintf(file, "beforewhile");
-    fflush(file);
     while (!otSysPseudoResetWasRequested())
     {
-        fprintf(file, "indsicewhileloop");
-        fflush(file);
-
         otTaskletsProcess(instance);
-        fprintf(file, "beforeprocessDrivers");
-        fflush(file);
+
         otSysProcessDrivers(instance);
-        fprintf(file, "afterprocessDrivers");
-        fprintf(file, "getmessage");
-        fflush(file);
+
         // Get message
         char      buffer[1024];
         socklen_t clilen = sizeof(clientAddr);
         ssize_t   n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
-        fprintf(file, "n: %li ", n);
-        fflush(file);
+
         if (n > 0)
         {
+            shitty_log("MAIN", "Received a message");
             otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
             settings->mLinkSecurityEnabled = 0;
             settings->mPriority            = 1;
@@ -252,12 +229,9 @@ pseudo_reset:
             b->mLinkInfo     = malloc(2);
             b->mHopLimit     = 255;
 
-            fprintf(file, "beforehandleudp");
-            fflush(file);
             handleUDP(instance, aMessage, b);
         }
     }
-    fclose(file);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     free(otInstanceBuffer);

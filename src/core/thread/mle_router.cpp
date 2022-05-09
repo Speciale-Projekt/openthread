@@ -53,6 +53,7 @@
 #include "thread/time_sync_service.hpp"
 #include "thread/uri_paths.hpp"
 #include "utils/otns.hpp"
+//#include "common/shittylog.h"
 
 namespace ot {
 namespace Mle {
@@ -621,7 +622,6 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
     LeaderData    leaderData;
     uint16_t      sourceAddress;
     RequestedTlvs requestedTlvs;
-
     Log(kMessageReceive, kTypeLinkRequest, aMessageInfo.GetPeerAddr());
 
     VerifyOrExit(IsRouterOrLeader(), error = kErrorInvalidState);
@@ -634,16 +634,22 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
     // Version
     SuccessOrExit(error = Tlv::Find<VersionTlv>(aMessage, version));
     VerifyOrExit(version >= OT_THREAD_VERSION_1_1, error = kErrorParse);
+    // shitty_log("HandleLinkRequest", "Passed initial checks");
 
     // Leader Data
     switch (ReadLeaderData(aMessage, leaderData))
     {
     case kErrorNone:
+        // shitty_log("HandleLinkRequest", "Key error none?");
+
         VerifyOrExit(leaderData.GetPartitionId() == mLeaderData.GetPartitionId(), error = kErrorInvalidState);
+        // shitty_log("HandleLinkRequest", "Got leader data");
         break;
     case kErrorNotFound:
+        // shitty_log("HandleLinkRequest", "Key Error not found?");
         break;
     default:
+        // shitty_log("HandleLinkRequest", "Some other error");
         ExitNow(error = kErrorParse);
     }
 
@@ -653,6 +659,7 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
     case kErrorNone:
         if (IsActiveRouter(sourceAddress))
         {
+            // shitty_log("HandleLinkRequest", "Here we are");
             Mac::ExtAddress extAddr;
 
             aMessageInfo.GetPeerAddr().GetIid().ConvertToExtAddress(extAddr);
@@ -660,9 +667,12 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
             neighbor = mRouterTable.GetRouter(RouterIdFromRloc16(sourceAddress));
             VerifyOrExit(neighbor != nullptr, error = kErrorParse);
             VerifyOrExit(!neighbor->IsStateLinkRequest(), error = kErrorAlready);
+            // shitty_log("HandleLinkRequest", "Here we are2");
 
             if (!neighbor->IsStateValid())
             {
+                // shitty_log("HandleLinkRequest", "Here we are3");
+
                 neighbor->SetExtAddress(extAddr);
                 neighbor->GetLinkInfo().Clear();
                 neighbor->GetLinkInfo().AddRss(aMessageInfo.GetThreadLinkInfo()->GetRss());
@@ -672,20 +682,29 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
             }
             else
             {
+                // shitty_log("HandleLinkRequest", "Here we are4");
+
                 VerifyOrExit(neighbor->GetExtAddress() == extAddr);
             }
         }
+        // shitty_log("HandleLinkRequest", "Here we are5");
 
         break;
 
     case kErrorNotFound:
+        // shitty_log("HandleLinkRequest", "Here we are6");
+
         // lack of source address indicates router coming out of reset
         VerifyOrExit(aNeighbor && aNeighbor->IsStateValid() && IsActiveRouter(aNeighbor->GetRloc16()),
                      error = kErrorDrop);
         neighbor = aNeighbor;
+        // shitty_log("HandleLinkRequest", "Here we are7");
+
         break;
 
     default:
+        // shitty_log("HandleLinkRequest", "Here we are8");
+
         ExitNow(error = kErrorParse);
     }
 
@@ -693,17 +712,25 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
     switch (FindTlvRequest(aMessage, requestedTlvs))
     {
     case kErrorNone:
+        // shitty_log("HandleLinkRequest", "Here we are9");
+
         break;
     case kErrorNotFound:
+        // shitty_log("HandleLinkRequest", "Here we are10");
+
         requestedTlvs.mNumTlvs = 0;
         break;
     default:
+        // shitty_log("HandleLinkRequest", "Here we are11");
+
         ExitNow(error = kErrorParse);
     }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     if (neighbor != nullptr)
     {
+        // shitty_log("HandleLinkRequest", "Here we are12");
+
         neighbor->SetTimeSyncEnabled(Tlv::Find<TimeRequestTlv>(aMessage, nullptr, 0) == kErrorNone);
     }
 #endif
@@ -711,11 +738,15 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     if (neighbor != nullptr)
     {
+        // shitty_log("HandleLinkRequest", "Here we are13");
+
         neighbor->ClearLastRxFragmentTag();
     }
 #endif
+    // shitty_log("HandleLinkRequest", "Here we are14");
 
     SuccessOrExit(error = SendLinkAccept(aMessageInfo, neighbor, requestedTlvs, challenge));
+    // shitty_log("HandleLinkRequest", "Here we are15");
 
 exit:
     LogProcessError(kTypeLinkRequest, error);

@@ -58,8 +58,10 @@
 #include "thread/mle_router.hpp"
 #include "thread/thread_netif.hpp"
 #include "thread/time_sync_service.hpp"
+#include "common/shittylog.h"
 
 using ot::Encoding::BigEndian::HostSwap16;
+int countMessages = 0;
 
 namespace ot {
 namespace Mle {
@@ -2659,11 +2661,21 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
-    FILE            *fp = fopen("device2.bin", "a+");
-    fputs("CHILD[", fp);
+    FILE            *fp = fopen("child.bin", "a+");
+    char             ipv6HumanReadable[16];
+
+    aDestination.ToString(ipv6HumanReadable, 16);
+
+    fputs("CHILD:", fp);
+    fprintf(fp, "%d:", countMessages);
+    fputs(ipv6HumanReadable , fp);
+    fputs("[", fp);
+    countMessages++;
+
 
     IgnoreError(aMessage.Read(0, header));
     uint16_t offset = aMessage.GetOffset();
+    shitty_log("SendMSG", "We've send a message");
 
     if (header.GetSecuritySuite() == Header::k154Security)
     {
@@ -2719,7 +2731,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             aMessage.MoveOffset(length);
         }   
     }
-    fputs("]CHILD", fp);
+    fputs("]", fp);
     fflush(fp);
     fclose(fp);
     messageInfo.SetPeerAddr(aDestination);
@@ -2774,6 +2786,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     Neighbor *neighbor;
     bool      skipLoggingError = false;
     LogDebg("Receive UDP message");
+    shitty_log("handle", "Received UDP message");
 
     VerifyOrExit(aMessageInfo.GetLinkInfo() != nullptr);
     VerifyOrExit(aMessageInfo.GetHopLimit() == kMleHopLimit, error = kErrorParse);
@@ -2783,6 +2796,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
     if (header.GetSecuritySuite() == Header::kNoSecurity)
     {
+        shitty_log("handle", "Tis has no security");
+
         aMessage.MoveOffset(header.GetLength());
 
         switch (header.GetCommand())
@@ -2806,6 +2821,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
     VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
+    shitty_log("handle", "Is secured");
 
     keySequence = header.GetKeyId();
 
@@ -2817,6 +2833,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     {
         mleKey = &Get<KeyManager>().GetTemporaryMleKey(keySequence);
     }
+    shitty_log("handle", "Passed key chcks");
 
     VerifyOrExit(aMessage.GetOffset() + header.GetLength() + sizeof(messageTag) <= aMessage.GetLength(),
                  error = kErrorParse);
@@ -2867,6 +2884,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     {
         Get<KeyManager>().SetCurrentKeySequence(keySequence);
     }
+    shitty_log("handle", "Passed old decryption");
 
     aMessage.SetOffset(mleOffset);
 
@@ -2926,26 +2944,38 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     switch (command)
     {
     case kCommandAdvertisement:
+        shitty_log("handle", "Tis b an advertisement");
+
         HandleAdvertisement(aMessage, aMessageInfo, neighbor);
         break;
 
     case kCommandDataResponse:
+        shitty_log("handle", "Tis b a data response");
+
         HandleDataResponse(aMessage, aMessageInfo, neighbor);
         break;
 
     case kCommandParentResponse:
+        shitty_log("handle", "Tis b a parent response");
+
         HandleParentResponse(aMessage, aMessageInfo, keySequence);
         break;
 
     case kCommandChildIdResponse:
+        shitty_log("handle", "Tis b a child id response");
+
         HandleChildIdResponse(aMessage, aMessageInfo, neighbor);
         break;
 
     case kCommandAnnounce:
+        shitty_log("handle", "Tis b an announce");
+
         HandleAnnounce(aMessage, aMessageInfo);
         break;
 
     case kCommandChildUpdateRequest:
+        shitty_log("handle", "Tis b a child update request");
+
 #if OPENTHREAD_FTD
         if (IsRouterOrLeader())
         {
@@ -2960,6 +2990,9 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
         break;
 
     case kCommandChildUpdateResponse:
+        shitty_log("handle", "Tis b a child update response");
+
+
 #if OPENTHREAD_FTD
         if (IsRouterOrLeader())
         {
@@ -2975,31 +3008,47 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
 #if OPENTHREAD_FTD
     case kCommandLinkRequest:
+        shitty_log("handle", "Tis b a link request");
+
+
         Get<MleRouter>().HandleLinkRequest(aMessage, aMessageInfo, neighbor);
         break;
 
     case kCommandLinkAccept:
+        shitty_log("handle", "Tis b a link accept");
+
+
         Get<MleRouter>().HandleLinkAccept(aMessage, aMessageInfo, keySequence, neighbor);
         break;
 
     case kCommandLinkAcceptAndRequest:
+        shitty_log("handle", "Tis b a link accept and request");
+
         Get<MleRouter>().HandleLinkAcceptAndRequest(aMessage, aMessageInfo, keySequence, neighbor);
         break;
 
     case kCommandDataRequest:
+        shitty_log("handle", "Tis b a data request");
+
         Get<MleRouter>().HandleDataRequest(aMessage, aMessageInfo, neighbor);
         break;
 
     case kCommandParentRequest:
+        shitty_log("handle", "Tis b a parent request");
+
         Get<MleRouter>().HandleParentRequest(aMessage, aMessageInfo);
         break;
 
     case kCommandChildIdRequest:
+        shitty_log("handle", "Tis b a child id request");
+
         Get<MleRouter>().HandleChildIdRequest(aMessage, aMessageInfo, keySequence);
         break;
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     case kCommandTimeSync:
+        shitty_log("handle", "Tis b a time sync");
+
         Get<MleRouter>().HandleTimeSync(aMessage, aMessageInfo, neighbor);
         break;
 #endif
@@ -3007,18 +3056,24 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
     case kCommandLinkMetricsManagementRequest:
+        shitty_log("handle", "Tis b a link metrics management request");
+
         HandleLinkMetricsManagementRequest(aMessage, aMessageInfo, neighbor);
         break;
 #endif
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_INITIATOR_ENABLE
     case kCommandLinkMetricsManagementResponse:
+        shitty_log("handle", "Tis b a link metrics management response");
+
         HandleLinkMetricsManagementResponse(aMessage, aMessageInfo, neighbor);
         break;
 #endif
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
     case kCommandLinkProbe:
+        shitty_log("handle", "Tis b a link probe");
+
         HandleLinkProbe(aMessage, aMessageInfo, neighbor);
         break;
 #endif
