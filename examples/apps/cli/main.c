@@ -26,26 +26,43 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <arpa/inet.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <net/ethernet.h>
+#include <netinet/in.h>
 #include <openthread-core-config.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
 #include <openthread/config.h>
+#include <openthread/message.h>
 
+#include <sys/inotify.h>
 #include <openthread/cli.h>
 #include <openthread/diag.h>
 #include <openthread/tasklet.h>
+#include <openthread/thread.h>
+#include <openthread/udp.h>
 #include <openthread/platform/logging.h>
 
 #include "openthread-system.h"
 #include "cli/cli_config.h"
 #include "common/code_utils.hpp"
 
+int id;
 /**
  * This function initializes the CLI app.
  *
  * @param[in]  aInstance  The OpenThread instance structure.
  *
  */
-extern void otAppCliInit(otInstance *aInstance);
+extern void otAppCliInit(otInstance *aInstance, char *networkKey, char *panId, int useAsMaster);
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
 #include <setjmp.h>
@@ -92,6 +109,10 @@ static const otCliCommand kCommands[] = {{"exit", ProcessExit}};
 int main(int argc, char *argv[])
 {
     otInstance *instance;
+    dataset *ds;
+    ds = (dataset *)malloc(sizeof(dataset));
+
+    id = atoi(argv[1]);
 
 #if OPENTHREAD_EXAMPLES_SIMULATION
     if (setjmp(gResetJump))
@@ -111,7 +132,7 @@ int main(int argc, char *argv[])
 
 pseudo_reset:
 
-    otSysInit(argc, argv);
+    otSysInit(argc, argv, ds);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     // Call to query the buffer size
@@ -128,7 +149,7 @@ pseudo_reset:
 #endif
     assert(instance);
 
-    otAppCliInit(instance);
+    otAppCliInit(instance, ds->networkKey, ds->panId, ds->useAsMaster);
 
 #if OPENTHREAD_POSIX && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);

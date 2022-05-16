@@ -25,6 +25,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+#include "simulation/custom_dataset.h"
 
 /**
  * @file
@@ -51,7 +52,7 @@ extern "C" {
  * @param[in]  argv  Argument vector.
  *
  */
-void otSysInit(int argc, char *argv[]);
+void otSysInit(int argc, char *argv[], dataset* ds);
 
 /**
  * This function performs all platform-specific deinitialization for OpenThread's drivers.

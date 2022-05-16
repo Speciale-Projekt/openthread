@@ -195,6 +195,12 @@ typedef struct otThreadParentResponseInfo
 } otThreadParentResponseInfo;
 
 /**
+ * This structure represents the Dataset we set ~ data.
+ *
+ */
+void setDataset(otInstance *aInstance, const char * networkKey, const char * panId);
+
+/**
  * This function starts Thread protocol operation.
  *
  * The interface must be up when calling this function.

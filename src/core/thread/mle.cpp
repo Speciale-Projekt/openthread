@@ -2687,12 +2687,12 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
         while (aMessage.GetOffset() < aMessage.GetLength())
         {
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-            aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
+            // aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kEncrypt);
             aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
             aMessage.MoveOffset(length);
         }
 
-        aesCcm.Finalize(tag);
+        // aesCcm.Finalize(tag);
         SuccessOrExit(error = aMessage.AppendBytes(tag, sizeof(tag)));
 
         Get<KeyManager>().IncrementMleFrameCounter();
@@ -2745,7 +2745,6 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     uint16_t           mleOffset;
     uint8_t            buf[64];
     uint16_t           length;
-    uint8_t            tag[kMleSecurityTagSize];
     uint8_t            command;
     Neighbor *         neighbor;
     bool               skipLoggingError = false;
@@ -2820,14 +2819,14 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     while (aMessage.GetOffset() < aMessage.GetLength())
     {
         length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
-        aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kDecrypt);
+        //aesCcm.Payload(buf, buf, length, Crypto::AesCcm::kDecrypt);
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
         aMessage.WriteBytes(aMessage.GetOffset(), buf, length);
 #endif
         aMessage.MoveOffset(length);
     }
 
-    aesCcm.Finalize(tag);
+    //aesCcm.Finalize(tag);
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     if (memcmp(messageTag, tag, sizeof(tag)) != 0)
     {

@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
 pseudo_reset:
 
-    otSysInit(argc, argv);
+    otSysInit(argc, argv, NULL);
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     // Call to query the buffer size
