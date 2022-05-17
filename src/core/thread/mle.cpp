@@ -2666,11 +2666,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
 
     aDestination.ToString(ipv6HumanReadable, 16);
 
-    fputs("CHILD:", fp);
-    fprintf(fp, "%d:", countMessages);
-    fputs(ipv6HumanReadable , fp);
-    fputs("[", fp);
-    countMessages++;
 
 
     IgnoreError(aMessage.Read(0, header));
@@ -2731,7 +2726,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             aMessage.MoveOffset(length);
         }   
     }
-    fputs("]", fp);
     fflush(fp);
     fclose(fp);
     messageInfo.SetPeerAddr(aDestination);
@@ -2739,7 +2733,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     messageInfo.SetPeerPort(kUdpPort);
     messageInfo.SetHopLimit(kMleHopLimit);
 
-    SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
+    //SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
 
 exit:
     return error;

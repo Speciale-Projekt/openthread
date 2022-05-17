@@ -795,7 +795,6 @@ void platformRadioProcess(otInstance *aInstance, const fd_set *aReadFdSet, const
             if (sockaddr.sin_port != htons(sPort))
             {
                 sReceiveFrame.mLength = (uint16_t)(rval - 1);
-
                 radioReceive(aInstance);
             }
         }

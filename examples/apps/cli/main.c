@@ -197,6 +197,16 @@ pseudo_reset:
         exit(1);
     }
 
+    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+    settings->mLinkSecurityEnabled = 0;
+    settings->mPriority            = 1;
+    otMessage *aMessage;
+    aMessage = otUdpNewMessage(instance, settings);
+
+    otMessageInfo *b = malloc(sizeof(otMessageInfo));
+    b->mLinkInfo     = malloc(2);
+    b->mHopLimit     = 255;
+
     while (!otSysPseudoResetWasRequested())
     {
         otTaskletsProcess(instance);
@@ -211,11 +221,6 @@ pseudo_reset:
         if (n > 0)
         {
             shitty_log("MAIN", "Received a message");
-            otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
-            settings->mLinkSecurityEnabled = 0;
-            settings->mPriority            = 1;
-            otMessage *aMessage;
-            aMessage = otUdpNewMessage(instance, settings);
 
             if (otMessageSetLength(aMessage, sizeof(buffer)) != OT_ERROR_NONE)
             {
@@ -225,9 +230,6 @@ pseudo_reset:
             {
                 perror("message write");
             };
-            otMessageInfo *b = malloc(sizeof(otMessageInfo));
-            b->mLinkInfo     = malloc(2);
-            b->mHopLimit     = 255;
 
             handleUDP(instance, aMessage, b);
         }
