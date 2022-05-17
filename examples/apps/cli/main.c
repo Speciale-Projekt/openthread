@@ -188,7 +188,6 @@ pseudo_reset:
     serverAddr.sin_family      = AF_INET;
     serverAddr.sin_port        = htons(listenAddr);
     serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
-    memset(serverAddr.sin_zero, '\0', sizeof(serverAddr.sin_zero));
 
     // Bind socket
     if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
