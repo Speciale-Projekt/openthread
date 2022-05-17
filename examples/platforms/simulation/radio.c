@@ -38,7 +38,8 @@
 #include <openthread/platform/diag.h>
 #include <openthread/platform/radio.h>
 #include <openthread/platform/time.h>
-
+#include <openthread/udp.h>
+#include <openthread/message.h>
 #include "utils/code_utils.h"
 #include "utils/link_metrics.h"
 #include "utils/mac_frame.h"
@@ -786,6 +787,19 @@ void platformRadioProcess(otInstance *aInstance, const fd_set *aReadFdSet, const
         socklen_t          len = sizeof(sockaddr);
         ssize_t            rval;
 
+        otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+        settings->mLinkSecurityEnabled = 0;
+        settings->mPriority            = 1;
+        otMessage *aMessage;
+
+
+        otMessageInfo *b = malloc(sizeof(otMessageInfo));
+        b->mLinkInfo     = malloc(2);
+        b->mHopLimit     = 255;
+
+
+        aMessage = otUdpNewMessage(aInstance, settings);
+
         memset(&sockaddr, 0, sizeof(sockaddr));
         rval =
             recvfrom(sRxFd, (char *)&sReceiveMessage, sizeof(sReceiveMessage), 0, (struct sockaddr *)&sockaddr, &len);
@@ -794,6 +808,18 @@ void platformRadioProcess(otInstance *aInstance, const fd_set *aReadFdSet, const
         {
             if (sockaddr.sin_port != htons(sPort))
             {
+
+                if (otMessageSetLength(aMessage, sizeof(sReceiveMessage.mPsdu)) != OT_ERROR_NONE)
+                {
+                    perror("message write");
+                };
+                if (0 > otMessageWrite(aMessage, 0, sReceiveMessage.mPsdu, sizeof(sReceiveMessage.mPsdu)))
+                {
+                    perror("message write");
+                };
+
+                handleUDP(aInstance, aMessage, b);
+
                 sReceiveFrame.mLength = (uint16_t)(rval - 1);
                 radioReceive(aInstance);
             }
@@ -808,6 +834,7 @@ void platformRadioProcess(otInstance *aInstance, const fd_set *aReadFdSet, const
             perror("recvfrom(sRxFd)");
             exit(EXIT_FAILURE);
         }
+        otMessageFree(aMessage);
     }
 #endif
 
