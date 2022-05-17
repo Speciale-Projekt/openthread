@@ -200,7 +200,7 @@ pseudo_reset:
     settings->mLinkSecurityEnabled = 0;
     settings->mPriority            = 1;
     otMessage *aMessage;
-    aMessage = otUdpNewMessage(instance, settings);
+
 
     otMessageInfo *b = malloc(sizeof(otMessageInfo));
     b->mLinkInfo     = malloc(2);
@@ -208,14 +208,12 @@ pseudo_reset:
 
     while (!otSysPseudoResetWasRequested())
     {
-        otTaskletsProcess(instance);
-
-        otSysProcessDrivers(instance);
-
         // Get message
         char      buffer[1024];
         socklen_t clilen = sizeof(clientAddr);
         ssize_t   n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
+
+        aMessage = otUdpNewMessage(instance, settings);
 
         if (n > 0)
         {
@@ -232,6 +230,11 @@ pseudo_reset:
 
             handleUDP(instance, aMessage, b);
         }
+
+        otMessageFree(aMessage);
+        otTaskletsProcess(instance);
+        otSysProcessDrivers(instance);
+
     }
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE

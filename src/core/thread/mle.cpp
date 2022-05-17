@@ -2733,7 +2733,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     messageInfo.SetPeerPort(kUdpPort);
     messageInfo.SetHopLimit(kMleHopLimit);
 
-    //SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
+    SuccessOrExit(error = mSocket.SendTo(aMessage, messageInfo));
 
 exit:
     return error;
