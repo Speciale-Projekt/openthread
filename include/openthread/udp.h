@@ -295,7 +295,7 @@ typedef void (*otUdpForwarder)(otMessage *   aMessage,
 void otUdpForwardSetForwarder(otInstance *aInstance, otUdpForwarder aForwarder, void *aContext);
 
 /**
- * Handle a UDP packet received from host.
+ * HandleF a UDP packet received from host.
  *
  * @param[in]  aInstance            A pointer to an OpenThread instance.
  * @param[in]  aMessage             A pointer to the UDP Message.

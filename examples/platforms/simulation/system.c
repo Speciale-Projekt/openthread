@@ -272,7 +272,6 @@ void otSysProcessDrivers(otInstance *aInstance)
 
     if (rval >= 0)
     {
-        platformUartProcess();
         platformRadioProcess(aInstance, &read_fds, &write_fds);
     }
     else if (errno != EINTR)

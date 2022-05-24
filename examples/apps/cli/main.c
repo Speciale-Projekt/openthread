@@ -51,6 +51,8 @@
 #include <openthread/udp.h>
 #include <openthread/platform/logging.h>
 
+#include <pthread.h>
+
 #include "openthread-system.h"
 #include "cli/cli_config.h"
 #include "cli/shittylog.h"
@@ -90,6 +92,66 @@ void otPlatFree(void *aPtr)
     free(aPtr);
 }
 #endif
+
+void *myThreadFun(void *instance)
+{
+    struct sockaddr_in serverAddr, clientAddr;
+    int                listenAddr   = 5000 + id;
+    char              *listenDomain = "127.0.0.1";
+    int                sockfd       = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+    {
+        perror("socket");
+        exit(1);
+    }
+
+    bzero(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family      = AF_INET;
+    serverAddr.sin_port        = htons(listenAddr);
+    serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
+
+    // Bind socket
+    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+    {
+        perror("bind \n");
+        exit(1);
+    }
+
+    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
+    settings->mLinkSecurityEnabled = 0;
+    settings->mPriority            = 1;
+    otMessage *aMessage;
+
+
+    otMessageInfo *b = malloc(sizeof(otMessageInfo));
+    b->mLinkInfo     = malloc(2);
+    b->mHopLimit     = 255;
+
+    while (1) {
+        // Get message
+        char buffer[1024];
+        socklen_t clilen = sizeof(clientAddr);
+        ssize_t n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *) &clientAddr, &clilen);
+
+        aMessage = otUdpNewMessage(instance, settings);
+
+        if (n > 0) {
+            shitty_log("MAIN", "Received a message");
+
+            if (otMessageSetLength(aMessage, sizeof(buffer)) != OT_ERROR_NONE) {
+                perror("message write");
+            };
+            if (0 > otMessageWrite(aMessage, 0, buffer, sizeof(buffer))) {
+                perror("message write");
+            };
+
+            handleUDP(instance, aMessage, b);
+        }
+
+        otMessageFree(aMessage);
+    }
+
+}
 
 void otTaskletsSignalPending(otInstance *aInstance)
 {
@@ -166,77 +228,17 @@ pseudo_reset:
     otCliSetUserCommands(kCommands, OT_ARRAY_LENGTH(kCommands), instance);
 #endif
 
-    struct sockaddr_in serverAddr, clientAddr;
-    int                listenAddr   = 5000 + id;
-    char              *listenDomain = "127.0.0.1";
-    int                sockfd       = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0)
-    {
-        perror("socket");
-        exit(1);
-    }
-
-    int rc = fcntl(sockfd, F_SETFL, O_NONBLOCK);
-    if (rc < 0)
-    {
-        perror("fcntl failed");
-        close(sockfd);
-        exit(-1);
-    }
-
-    bzero(&serverAddr, sizeof(serverAddr));
-    serverAddr.sin_family      = AF_INET;
-    serverAddr.sin_port        = htons(listenAddr);
-    serverAddr.sin_addr.s_addr = inet_addr(listenDomain);
-
-    // Bind socket
-    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-    {
-        perror("bind \n");
-        exit(1);
-    }
-
-    otMessageSettings *settings    = malloc(sizeof(otMessageSettings));
-    settings->mLinkSecurityEnabled = 0;
-    settings->mPriority            = 1;
-    otMessage *aMessage;
-
-
-    otMessageInfo *b = malloc(sizeof(otMessageInfo));
-    b->mLinkInfo     = malloc(2);
-    b->mHopLimit     = 255;
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, myThreadFun, instance);
+    printf("After Thread\n");
 
     while (!otSysPseudoResetWasRequested())
     {
-        // Get message
-        char      buffer[1024];
-        socklen_t clilen = sizeof(clientAddr);
-        ssize_t   n      = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &clilen);
-
-        aMessage = otUdpNewMessage(instance, settings);
-
-        if (n > 0)
-        {
-            shitty_log("MAIN", "Received a message");
-
-            if (otMessageSetLength(aMessage, sizeof(buffer)) != OT_ERROR_NONE)
-            {
-                perror("message write");
-            };
-            if (0 > otMessageWrite(aMessage, 0, buffer, sizeof(buffer)))
-            {
-                perror("message write");
-            };
-
-            handleUDP(instance, aMessage, b);
-        }
-
-        otMessageFree(aMessage);
         otTaskletsProcess(instance);
         otSysProcessDrivers(instance);
-
     }
 
+    otInstanceFinalize(instance);
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     free(otInstanceBuffer);
 #endif

@@ -2661,12 +2661,8 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint8_t          buf[64];
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
-    FILE            *fp = fopen("child.bin", "a+");
+    FILE            *fp = fopen("child.bin", "w+");
     char             ipv6HumanReadable[16];
-
-    aDestination.ToString(ipv6HumanReadable, 16);
-
-
 
     IgnoreError(aMessage.Read(0, header));
     uint16_t offset = aMessage.GetOffset();
@@ -3073,6 +3069,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 #endif
 
     default:
+        shitty_log("EXIT","We reached defualt case");
+        exit(139);
         ExitNow(error = kErrorDrop);
     }
 

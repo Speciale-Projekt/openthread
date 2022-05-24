@@ -32,6 +32,7 @@
  */
 
 #include "openthread-core-config.h"
+#include <openthread/thread.h>
 
 #if OPENTHREAD_FTD || OPENTHREAD_MTD
 
