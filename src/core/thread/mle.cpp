@@ -2662,7 +2662,6 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
     uint16_t         length;
     Ip6::MessageInfo messageInfo;
     FILE            *fp = fopen("child.bin", "w+");
-    char             ipv6HumanReadable[16];
 
     IgnoreError(aMessage.Read(0, header));
     uint16_t offset = aMessage.GetOffset();
