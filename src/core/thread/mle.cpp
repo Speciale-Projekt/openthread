@@ -3068,8 +3068,6 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 #endif
 
     default:
-        shitty_log("EXIT","We reached defualt case");
-        exit(139);
         ExitNow(error = kErrorDrop);
     }
 
