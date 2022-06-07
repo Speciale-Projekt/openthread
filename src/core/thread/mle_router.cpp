@@ -1687,9 +1687,9 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
 
     aMessageInfo.GetPeerAddr().GetIid().ConvertToExtAddress(extAddr);
 
-    // Version
-    SuccessOrExit(error = Tlv::Find<VersionTlv>(aMessage, version));
-    VerifyOrExit(version >= OT_THREAD_VERSION_1_1, error = kErrorParse);
+    // Version (removed for funnnnnnnn)
+    // SuccessOrExit(error = Tlv::Find<VersionTlv>(aMessage, version));
+    // VerifyOrExit(version >= OT_THREAD_VERSION_1_1, error = kErrorParse);
 
     // Scan Mask
     SuccessOrExit(error = Tlv::Find<ScanMaskTlv>(aMessage, scanMask));
