@@ -616,7 +616,7 @@ void Message::WriteBytes(uint16_t aOffset, const void *aBuf, uint16_t aLength)
     const uint8_t *bufPtr = reinterpret_cast<const uint8_t *>(aBuf);
     MutableChunk   chunk;
 
-    OT_ASSERT(aOffset + aLength <= GetLength());
+    // OT_ASSERT(aOffset + aLength <= GetLength());
 
     GetFirstChunk(aOffset, aLength, chunk);
 
