@@ -2022,7 +2022,7 @@ void MleRouter::SendParentResponse(Child *aChild, const Challenge &aChallenge, b
     error = AppendLinkMargin(*message, aChild->GetLinkInfo().GetLinkMargin());
     SuccessOrExit(error);
 
-    SuccessOrExit(error = AppendConnectivity(*message));
+    // SuccessOrExit(error = AppendConnectivity(*message));
     SuccessOrExit(error = AppendVersion(*message));
 
     destination.SetToLinkLocalAddress(aChild->GetExtAddress());
