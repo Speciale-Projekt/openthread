@@ -2911,7 +2911,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
         Get<RadioSelector>().UpdateOnReceive(*neighbor, aMessage.GetRadioType(), /* IsDuplicate */ false);
     }
 #endif
-
+    HandleChildIdResponse(aMessage, aMessageInfo, neighbor);
+    
     switch (command)
     {
     case kCommandAdvertisement:
