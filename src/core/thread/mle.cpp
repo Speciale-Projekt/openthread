@@ -2875,6 +2875,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     }
     shitty_log("handle", "Passed old decryption");
 
+    Get<MleRouter>().HandleParentRequest(aMessage, aMessageInfo);
+
     aMessage.SetOffset(mleOffset);
 
     IgnoreError(aMessage.Read(aMessage.GetOffset(), command));
@@ -3025,7 +3027,6 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     case kCommandParentRequest:
         shitty_log("handle", "Tis b a parent request");
 
-        Get<MleRouter>().HandleParentRequest(aMessage, aMessageInfo);
         break;
 
     case kCommandChildIdRequest:
