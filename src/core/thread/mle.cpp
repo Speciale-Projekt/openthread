@@ -2786,9 +2786,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
 
 #if OPENTHREAD_FTD
-            Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
+    Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
 #endif
-            ExitNow();
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
     VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
