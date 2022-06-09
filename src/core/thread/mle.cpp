@@ -2777,7 +2777,6 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     LogDebg("Receive UDP message");
     shitty_log("handle", "Received UDP message");
 
-    error = SendDiscoveryResponse(aMessageInfo.GetPeerAddr(), aMessage);
 
     VerifyOrExit(aMessageInfo.GetLinkInfo() != nullptr);
     VerifyOrExit(aMessageInfo.GetHopLimit() == kMleHopLimit, error = kErrorParse);
@@ -2785,30 +2784,11 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     length = aMessage.ReadBytes(aMessage.GetOffset(), &header, sizeof(header));
     VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
 
-    if (header.GetSecuritySuite() == Header::kNoSecurity)
-    {
-        shitty_log("handle", "Tis has no security");
 
-        aMessage.MoveOffset(header.GetLength());
-
-        switch (header.GetCommand())
-        {
 #if OPENTHREAD_FTD
-        case kCommandDiscoveryRequest:
             Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
-            break;
 #endif
-
-        case kCommandDiscoveryResponse:
-            Get<DiscoverScanner>().HandleDiscoveryResponse(aMessage, aMessageInfo);
-            break;
-
-        default:
-            break;
-        }
-
-        ExitNow();
-    }
+            ExitNow();
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
     VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
