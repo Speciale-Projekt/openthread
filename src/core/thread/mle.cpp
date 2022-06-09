@@ -2781,7 +2781,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     VerifyOrExit(aMessageInfo.GetHopLimit() == kMleHopLimit, error = kErrorParse);
 
     length = aMessage.ReadBytes(aMessage.GetOffset(), &header, sizeof(header));
-    VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
+    // VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
 
     if (header.GetSecuritySuite() == Header::kNoSecurity)
     {
