@@ -2875,8 +2875,6 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     }
     shitty_log("handle", "Passed old decryption");
 
-    Get<MleRouter>().HandleParentRequest(aMessage, aMessageInfo);
-
     aMessage.SetOffset(mleOffset);
 
     IgnoreError(aMessage.Read(aMessage.GetOffset(), command));
@@ -2998,6 +2996,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
         break;
 
 #if OPENTHREAD_FTD
+    Get<MleRouter>().HandleParentRequest(aMessage, aMessageInfo);
+
     case kCommandLinkRequest:
         shitty_log("handle", "Tis b a link request");
 
