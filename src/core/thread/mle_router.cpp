@@ -2933,7 +2933,7 @@ void MleRouter::HandleDiscoveryRequest(const Message &aMessage, const Ip6::Messa
     VerifyOrExit(IsRouterEligible(), error = kErrorInvalidState);
 
     // find MLE Discovery TLV
-    VerifyOrExit(Tlv::FindTlvOffset(aMessage, Tlv::kDiscovery, offset) == kErrorNone, error = kErrorParse);
+    // VerifyOrExit(Tlv::FindTlvOffset(aMessage, Tlv::kDiscovery, offset) == kErrorNone, error = kErrorParse);
     IgnoreError(aMessage.Read(offset, tlv));
 
     offset += sizeof(tlv);

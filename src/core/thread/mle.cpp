@@ -2791,7 +2791,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
 
 #if OPENTHREAD_FTD
-            Get<MleRouter>().SendDiscoveryResponse(aMessageInfo.GetPeerAddr(), aMessage);
+    Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
 #endif
 
             ExitNow();
