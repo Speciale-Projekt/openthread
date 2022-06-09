@@ -2826,7 +2826,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
 
     VerifyOrExit(aMessage.GetOffset() + header.GetLength() + sizeof(messageTag) <= aMessage.GetLength(),
                  error = kErrorParse);
-    aMessage.MoveOffset(header.GetLength() - 1);
+    aMessage.MoveOffset(header.GetLength());
 
     IgnoreError(aMessage.Read(aMessage.GetLength() - sizeof(messageTag), messageTag));
     SuccessOrExit(error = aMessage.SetLength(aMessage.GetLength() - sizeof(messageTag)));
