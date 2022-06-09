@@ -2777,6 +2777,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     LogDebg("Receive UDP message");
     shitty_log("handle", "Received UDP message");
 
+    error = SendDiscoveryResponse(aMessageInfo.GetPeerAddr(), aMessage);
+
     VerifyOrExit(aMessageInfo.GetLinkInfo() != nullptr);
     VerifyOrExit(aMessageInfo.GetHopLimit() == kMleHopLimit, error = kErrorParse);
 
