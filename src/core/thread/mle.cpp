@@ -2719,7 +2719,7 @@ Error Mle::SendMessage(Message &aMessage, const Ip6::Address &aDestination)
             length = aMessage.ReadBytes(aMessage.GetOffset(), buf, sizeof(buf));
             fwrite(buf, 1, length, fp);
             aMessage.MoveOffset(length);
-        }   
+        }
     }
     fflush(fp);
     fclose(fp);
@@ -2785,9 +2785,16 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
 
 
+
+    shitty_log("handle", "Tis has no security");
+    aMessage.MoveOffset(header.GetLength());
+
+
 #if OPENTHREAD_FTD
-    Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
+            Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
 #endif
+
+            ExitNow();
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
     VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
