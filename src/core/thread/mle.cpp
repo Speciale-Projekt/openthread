@@ -2785,10 +2785,30 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     VerifyOrExit(header.IsValid() && header.GetLength() <= length, error = kErrorParse);
 
 
+    if (header.GetSecuritySuite() == Header::kNoSecurity)
+    {
+        shitty_log("handle", "Tis has no security");
+
+        aMessage.MoveOffset(header.GetLength());
+
+        switch (header.GetCommand())
+        {
 #if OPENTHREAD_FTD
+            case kCommandDiscoveryRequest:
             Get<MleRouter>().HandleDiscoveryRequest(aMessage, aMessageInfo);
+            break;
 #endif
-            ExitNow();
+
+            case kCommandDiscoveryResponse:
+                Get<DiscoverScanner>().HandleDiscoveryResponse(aMessage, aMessageInfo);
+                break;
+
+            default:
+                break;
+        }
+
+        ExitNow();
+    }
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
     VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
@@ -2912,7 +2932,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     }
 #endif
     HandleChildIdResponse(aMessage, aMessageInfo, neighbor);
-    
+
     switch (command)
     {
     case kCommandAdvertisement:
