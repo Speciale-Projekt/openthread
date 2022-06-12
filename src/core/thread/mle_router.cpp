@@ -2964,8 +2964,7 @@ void MleRouter::HandleDiscoveryRequest(const Message &aMessage, const Ip6::Messa
         offset += sizeof(meshcopTlv) + meshcopTlv.GetLength();
     }
 
-    if (discoveryRequest.IsValid())
-    {
+
         if (mDiscoveryRequestCallback != nullptr)
         {
             otThreadDiscoveryRequestInfo info;
@@ -2989,7 +2988,7 @@ void MleRouter::HandleDiscoveryRequest(const Message &aMessage, const Ip6::Messa
                 VerifyOrExit(Get<NetworkData::Leader>().IsJoiningEnabled(), error = kErrorSecurity);
             }
         }
-    }
+
 
     error = SendDiscoveryResponse(aMessageInfo.GetPeerAddr(), aMessage);
 
