@@ -1733,7 +1733,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
         {
             mode.Set(modeBitmask);
             child->SetDeviceMode(mode);
-            child->SetVersion(static_cast<uint8_t>(version));
+            child->SetVersion(1);
         }
     }
     else if (TimerMilli::GetNow() - child->GetLastHeard() < kParentRequestRouterTimeout - kParentRequestDuplicateMargin)
