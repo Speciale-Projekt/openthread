@@ -1646,7 +1646,6 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
 {
     Error           error = kErrorNone;
     Mac::ExtAddress extAddr;
-    uint16_t        version;
     uint8_t         scanMask;
     Challenge       challenge;
     Router *        leader;
