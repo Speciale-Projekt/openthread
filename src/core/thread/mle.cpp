@@ -2809,8 +2809,8 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     }
 
     VerifyOrExit(!IsDisabled(), error = kErrorInvalidState);
-    VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
-    shitty_log("handle", "Is secured");
+    //VerifyOrExit(header.GetSecuritySuite() == Header::k154Security, error = kErrorParse);
+    //shitty_log("handle", "Is secured");
 
     keySequence = header.GetKeyId();
 
